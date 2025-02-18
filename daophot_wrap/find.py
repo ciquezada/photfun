@@ -31,9 +31,9 @@ def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True):
             print(f"daophot: find({filename})")
         check_file(temp_opt, "opt file input: ")
         check_file(temp_fits, "fits file input: ")
-        overwrite = [""] if os.path.isfile(f"{out_coo_filename}") else []
+        overwrite = [""] if os.path.isfile(out_coo_filename) else []
         cmd_list = ['daophot << EOF >> find.log', f'at {filename}', 
-                        'find', f'{sum_aver}', f"{out_coo_filename}",
+                        'find', f'{sum_aver}', out_coo_filename,
                         *overwrite,
                         'y', 
                         'exit', 'EOF']

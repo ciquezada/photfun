@@ -15,7 +15,7 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True):
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
         # Crear carpeta temporal
-        temp_dir = os.path.abspath(temp_mkdir(f"{filename}_FIND_0"))
+        temp_dir = os.path.abspath(temp_mkdir(f"{filename}_PHOT_0"))
         temp_fits = os.path.join(temp_dir, os.path.basename(in_fits))
         temp_coo = os.path.join(temp_dir, os.path.basename(in_coo))
         temp_daophot  = os.path.join(temp_dir, os.path.basename(in_daophot))
@@ -45,7 +45,7 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True):
         overwrite = [""] if os.path.isfile(f"{out_ap_filename}") else []
         cmd_list = ['daophot << EOF >> phot.log', f'at {filename}', 
                         'phot', f'photo.opt\n', 
-                        f"{temp_coo_filename}", f"{out_ap_filename}",
+                        temp_coo_filename, out_ap_filename,
                         *overwrite,
                         'exit', 'EOF']
         cmd = '\n'.join(cmd_list)
@@ -62,7 +62,7 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True):
         final_out_ap = move_file_noreplace(temp_ap, out_ap)
         move_file_noreplace(temp_log, out_log)
 
-        check_file(final_out_ap, "coo not created: ")
+        check_file(final_out_ap, "ap not created: ")
         if verbose:
             print(f"  -> {final_out_ap}")
 
