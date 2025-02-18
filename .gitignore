@@ -1,6 +1,5 @@
 # General Python ignores
 __pycache__/
-*.py
 *.pyc
 *.so
 *.egg-info/
