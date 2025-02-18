@@ -1,0 +1,28 @@
+# General Python ignores
+__pycache__/
+*.py
+*.pyc
+*.so
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Shiny for Python cache
+.shiny/
+
+testing/
