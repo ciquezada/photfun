@@ -4,12 +4,8 @@ sys.path.append("/data/ciquezada/Projects/py_photsuite")
 import unittest
 import os
 import shutil
-from daophot_wrap.find import find
-from daophot_wrap.phot import phot
-from daophot_wrap.pick import pick
-from daophot_wrap.create_psf import create_psf
-from daophot_wrap.sub_fits import sub_fits
-from daophot_wrap.allstar import allstar
+from daophot_wrap import find, phot, pick, create_psf, sub_fits, allstar
+
 
 # Cambiar al directorio donde está el script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
