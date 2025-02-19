@@ -18,3 +18,8 @@ class PhotFits:
         if self._image is None:
             self._image = fits.open(self.path)
         return self._image
+
+    @classmethod
+    def reset_id_counter(cls):
+        """Resetea el contador de ID a cero."""
+        cls._id_counter = 0

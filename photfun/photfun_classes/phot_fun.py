@@ -6,7 +6,7 @@ import shutil
 from .phot_table import PhotTable
 from .phot_fits import PhotFits
 from .phot_fits_dir import PhotFitsDir
-from daophot_wrap import find, phot
+from daophot_wrap import find, phot, pick
 from photfun.daophot_opt import daophot_dict, photo_dict, allstar_dict
 from misc_tools import temp_mkdir
 
@@ -59,7 +59,7 @@ class PhotFun:
         if not fits_obj:
             raise ValueError(f"No se encontró un FITS con ID {fits_id}")
         if not coo_table:
-            raise ValueError(f"No se encontró una tabla COORDS con ID {coo_id}")
+            raise ValueError(f"No se encontró una tabla con ID {coo_id}")
         self._save_opt_files()
 
         output_dir = os.path.dirname(fits_obj.path)
@@ -69,6 +69,23 @@ class PhotFun:
                                 os.path.join(self.working_dir, 'photo.opt'), 
                                 out_ap)
         self.add_table(final_out_ap)
+
+    def pick(self, fits_id, ap_id):
+        """Aplica find a un archivo FITS almacenado y guarda la salida como una tabla."""
+        fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
+        ap_table = next(filter(lambda f: f.id==ap_id, self.tables), None)
+        if not fits_obj:
+            raise ValueError(f"No se encontró un FITS con ID {fits_id}")
+        if not ap_table:
+            raise ValueError(f"No se encontró una tabla con ID {ap_id}")
+        self._save_opt_files()
+
+        output_dir = os.path.dirname(fits_obj.path)
+        out_lst = os.path.join(output_dir, f"{fits_obj.alias.replace('.fits', '.lst')}")
+        final_out_lst = pick(fits_obj.path, ap_table.path, 
+                                os.path.join(self.working_dir, 'daophot.opt'), 
+                                out_lst)
+        self.add_table(final_out_lst)
 
     def _save_opt_files(self):
         opt_files = {
@@ -108,3 +125,6 @@ class PhotFun:
         self.tables.clear()
         self.fits_files.clear()
         self.fits_dirs.clear()
+        PhotTable.reset_id_counter()
+        PhotFits.reset_id_counter()
+        PhotFitsDir.reset_id_counter()

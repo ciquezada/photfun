@@ -15,3 +15,8 @@ class PhotFitsDir:
     
     def _load_fits_files(self):
         return [PhotFits(f) for f in glob.glob(os.path.join(self.path, '*.fits'))]
+
+    @classmethod
+    def reset_id_counter(cls):
+        """Resetea el contador de ID a cero."""
+        cls._id_counter = 0

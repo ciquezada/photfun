@@ -72,3 +72,8 @@ class PhotTable:
                 data.append(line1 + line2)
 
         return pd.DataFrame(data, columns=col_names)
+    
+    @classmethod
+    def reset_id_counter(cls):
+        """Resetea el contador de ID a cero."""
+        cls._id_counter = 0
