@@ -7,7 +7,7 @@ from .phot_table import PhotTable
 from .phot_fits import PhotFits
 from .phot_psf import PhotPSF
 from daophot_wrap import find, phot, pick, create_psf, sub_fits, allstar
-from photfun.daophot_opt import daophot_dict, photo_dict, allstar_dict
+from photfun.daophot_opt import opt_daophot_dict, opt_photo_dict, opt_allstar_dict
 from misc_tools import temp_mkdir
 
 
@@ -18,9 +18,9 @@ class PhotFun:
         self.psf_files = []
 
         # Almacenar los diccionarios de opciones como atributos
-        self.daophot_opt = daophot_dict.copy()
-        self.photo_opt = photo_dict.copy()
-        self.allstar_opt = allstar_dict.copy()
+        self.daophot_opt = opt_daophot_dict.copy()
+        self.photo_opt = opt_photo_dict.copy()
+        self.allstar_opt = opt_allstar_dict.copy()
 
         # Crear la carpeta temporal
         self.working_dir = os.path.abspath(temp_mkdir("photfun_working_dir"))
@@ -40,7 +40,7 @@ class PhotFun:
         psf_file = PhotPSF(path)
         self.psf_files.append(psf_file)
 
-    def find(self, fits_id):
+    def find(self, fits_id, sum_aver="1,1"):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
         if not fits_obj:
             raise ValueError(f"No se encontró un FITS con ID {fits_id}")
@@ -48,7 +48,7 @@ class PhotFun:
 
         output_dir = os.path.dirname(fits_obj.path)
         out_coo = os.path.join(output_dir, f"{os.path.basename(fits_obj.path).replace('.fits', '.coo')}")
-        final_out_coo = find(fits_obj.path, os.path.join(self.working_dir, 'daophot.opt'), out_coo)
+        final_out_coo = find(fits_obj.path, os.path.join(self.working_dir, 'daophot.opt'), out_coo, sum_aver)
         self.add_table(final_out_coo)
 
     def phot(self, fits_id, coo_id):
@@ -68,7 +68,7 @@ class PhotFun:
                                 out_ap)
         self.add_table(final_out_ap)
 
-    def pick(self, fits_id, ap_id):
+    def pick(self, fits_id, ap_id, stars_minmag="200,20"):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
         ap_table = next(filter(lambda f: f.id==ap_id, self.tables), None)
         if not fits_obj:
@@ -81,7 +81,7 @@ class PhotFun:
         out_lst = os.path.join(output_dir, f"{os.path.basename(fits_obj.path).replace('.fits', '.lst')}")
         final_out_lst = pick(fits_obj.path, ap_table.path, 
                                 os.path.join(self.working_dir, 'daophot.opt'), 
-                                out_lst)
+                                out_lst, stars_minmag)
         self.add_table(final_out_lst)
 
     def psf(self, fits_id, ap_id, lst_id):
@@ -124,7 +124,7 @@ class PhotFun:
                                         out_subfits)
         self.add_fits(final_out_subfits)
 
-    def allstar(self, fits_id, psf_id, ap_id):
+    def allstar(self, fits_id, psf_id, ap_id, RE=True):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
         psf_obj = next(filter(lambda f: f.id==psf_id, self.psf_files), None)
         ap_table = next(filter(lambda f: f.id==ap_id, self.tables), None)
@@ -142,7 +142,7 @@ class PhotFun:
         final_out_als, final_out_subfits = allstar(fits_obj.path, psf_obj.path, ap_table.path,
                                                         os.path.join(self.working_dir, 'daophot.opt'), 
                                                         os.path.join(self.working_dir, 'allstar.opt'), 
-                                                        out_als, out_subfits)
+                                                        out_als, out_subfits, RE=True)
         self.add_table(final_out_als)
         self.add_fits(final_out_subfits)
 

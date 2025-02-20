@@ -1,5 +1,5 @@
 #OPT GENERALES
-daophot_dict = {
+opt_daophot_dict = {
                 're': 2.08,
                 'ga': 1.06,
                 'lo': 7,
@@ -21,7 +21,7 @@ daophot_dict = {
                 'pe': 0.75
                 }
 
-photo_dict = {
+opt_photo_dict = {
                 'A1': 3,
                 'A2': 5,
                 'A3': 7,
@@ -38,7 +38,7 @@ photo_dict = {
                 'OS': 20
                 }
 
-allstar_dict = {
+opt_allstar_dict = {
                 'fi': 4,
                 're': 1,
                 'wa': 0,

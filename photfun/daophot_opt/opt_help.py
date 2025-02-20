@@ -1,3 +1,56 @@
+# Strings descriptivos
+opt_daophot_labels = {
+    're': 'Readout Noise',
+    'ga': 'Gain',
+    'lo': 'Low Good',
+    'hi': 'High Good',
+    'fw': 'FWHM of Star',
+    'th': 'Threshold',
+    'ls': 'Low Sharpness',
+    'lr': 'Low Roundness',
+    'hs': 'High Sharpness',
+    'hr': 'High Roundness',
+    'wa': 'Watch Progress',
+    'fi': 'Fitting Radius',
+    'ps': 'PSF Radius',
+    'va': 'Variable PSF',
+    'an': 'Analytic PSF',
+    'ex': 'PSF Cleaning',
+    'us': 'us (DEPRECATED)',
+    'pr': 'Profile Error',
+    'pe': 'Percent Error',
+}
+
+opt_photo_labels = {
+    "A1": "Apert Radii 1",
+    "A2": "Apert Radii 2",
+    "A3": "Apert Radii 3",
+    "A4": "Apert Radii 4",
+    "A5": "Apert Radii 5",
+    "A6": "Apert Radii 6",
+    "A7": "Apert Radii 7",
+    "A8": "Apert Radii 8",
+    "A9": "Apert Radii 9",
+    "AA": "Apert Radii 10",
+    "AB": "Apert Radii 11",
+    "AC": "Apert Radii 12",
+    "IS": "InnerSky Radii",
+    "OS": "OuterSky Radii"
+}
+
+opt_allstar_labels = {
+    "fi": "Fitting Radius",
+    "re": "Recenter Stars",
+    "wa": "Watch Progress",
+    "pe": "Percent Error",
+    "ce": "Clip Exponent",
+    "cr": "Clip Range",
+    "ma": "Max Group Size",
+    "pr": "Profile Error",
+    "is": "InnerSky Radii",
+    "os": "OuterSky Radii"
+}
+
 info_docstrings = {
 "INFO_re": """
 READ NOISE: 
