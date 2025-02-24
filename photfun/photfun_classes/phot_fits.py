@@ -4,39 +4,41 @@ from astropy.io import fits
 
 
 class PhotFits:
-    _id_counter = 0
-    
     def __init__(self, path):
-        self.id = PhotFits._id_counter
-        PhotFits._id_counter += 1
-        
-        if isinstance(path, list):
-            self.file_type = "fits_list"
+        if isinstance(path, list):  # Si es una carpeta
+            self.file_type = "list"
             self.path_list = sorted(path)
-            self.alias = f"[dir] {os.path.basename(self.path_list[0])}"
-            self.path = self.path_list[0]
-        elif os.path.isdir(path):
-            self.file_type = "fits_dir"
-            self.path_list = sorted(glob.glob(os.path.join(path, "*.fits")))
-            self.alias = f"[dir] {os.path.basename(path)}"
-            self.path = self.path_list[0]
-        else:
-            self.file_type = "fits"
+            indv_path = self.path_list[0] if self.path_list else None
+            self.alias = f"[>] {os.path.basename(indv_path)}"
+            self.path = os.path.abspath(indv_path)
+        elif os.path.isdir(path):  # Si es una lista de archivos
+            self.file_type = "dir"
+            self.path_list = sorted([
+                                    os.path.join(path, f) for f in os.listdir(path)
+                                    if os.path.isfile(os.path.join(path, f))
+                                ])
+            self.alias = f"[>] {os.path.basename(path)}"
+            self.path = os.path.abspath(path)
+        elif os.path.isfile(path):  # Si es un archivo único
+            self.file_type = "file"
             self.path_list = None
             self.alias = os.path.basename(path)
             self.path = os.path.abspath(path)
-
+        else:  # Manejo de error si el path no es válido
+            raise ValueError(f"Invalid path: {path}")
+        # Verificar que todos los archivos tienen la misma extensión
+        if self.path_list:
+            extensions = {os.path.splitext(f)[1].lower() for f in self.path_list}
+            if len(extensions) > 1:
+                raise ValueError(f"Multiple file types detected: {extensions}. "
+                                "All files must have the same extension.")
+        elif self.file_type in ["list", "dir"]:
+            raise ValueError(f"The directory '{path}' is empty.")
+        self.header = None
         self._image = None
     
     @property
     def image(self):
-        if self._image is None and self.path_list:
-            self._image = fits.open(self.path_list[0])
-        elif self._image is None:
-            self._image = fits.open(self.path)
+        if self._image is None:
+            self._image = fits.open(self.path)[0]
         return self._image
-    
-    @classmethod
-    def reset_id_counter(cls):
-        """Resetea el contador de ID a cero."""
-        cls._id_counter = 0
