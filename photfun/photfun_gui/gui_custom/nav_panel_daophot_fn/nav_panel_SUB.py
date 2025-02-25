@@ -72,8 +72,15 @@ def nav_panel_SUB_server(input, output, session, photfun_client, nav_table_sidev
         nei_obj = selected_nei_table()
         lst_obj = selected_lst_table()
         if fits_obj and psf_obj and nei_obj:
-            photfun_client.sub(fits_obj.id, psf_obj.id, nei_obj.id, 
-                                    lst_obj.id if lst_obj else False)
+            try:
+                out_fits_obj = photfun_client.sub(fits_obj.id, psf_obj.id, nei_obj.id, 
+                                            lst_obj.id if lst_obj else False)
+                ui.notification_show(f"Substracted fits\n -> [{out_fits_obj.id}] {out_fits_obj.alias}")
+            except Exception as e:
+                ui.notification_show(f"Error: {str(e)}", type="error")
+        else:
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        
         nav_table_sideview_update()
         update_select()
 

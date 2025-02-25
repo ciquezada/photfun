@@ -5,8 +5,8 @@ from faicons import icon_svg  # Para iconos en botones
 def nav_panel_ALLSTAR_ui():
     return ui.page_fillable(
         ui.input_select("fits_select", "Select FITS", choices={}, width="auto"),  # Lista FITS
-        ui.input_select("table_psf_select", "Select Table", choices={}, width="auto"),  # Lista Tables
-        ui.input_select("table_select", "Select Table", choices={}, width="auto"),  # Lista Tables
+        ui.input_select("table_psf_select", "Select PSF model", choices={}, width="auto"),  # Lista Tables
+        ui.input_select("table_select", "Select Targets", choices={}, width="auto"),  # Lista Tables
         ui.input_action_button("allstar_btn", "ALLSTAR", icon=icon_svg("sun"), width="auto"),  # Botón compacto
     )
 
@@ -61,7 +61,14 @@ def nav_panel_ALLSTAR_server(input, output, session, daofun_client, nav_table_si
         psf_obj = selected_psf_table()
         table_obj = selected_table()
         if fits_obj and psf_obj and table_obj:
-            daofun_client.allstar(fits_obj.id, psf_obj.id, table_obj.id)
+            try:
+                out_table_obj, out_fits_obj = daofun_client.allstar(fits_obj.id, psf_obj.id, table_obj.id)
+                ui.notification_show(f"ALLSTAR PSF photometry complete\n -> [{out_table_obj.id}] {out_table_obj.alias}\n (Substracted: [{out_fits_obj.id}] {out_fits_obj.alias})")
+            except Exception as e:
+                ui.notification_show(f"Error: {str(e)}", type="error")
+        else:
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        
         nav_table_sideview_update()
         update_select()
 

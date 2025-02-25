@@ -13,7 +13,10 @@ from photfun.photfun_gui.gui_custom.nav_panel_daophot_fn import (
     nav_panel_PICK_ui, nav_panel_PICK_server,
     nav_panel_PSF_ui, nav_panel_PSF_server,
     nav_panel_SUB_ui, nav_panel_SUB_server,
-    nav_panel_ALLSTAR_ui, nav_panel_ALLSTAR_server
+    nav_panel_ALLSTAR_ui, nav_panel_ALLSTAR_server,
+    nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server,
+    nav_panel_opt_PHOTO_ui, nav_panel_opt_PHOTO_server,
+    nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server
 )
 
 
@@ -33,9 +36,15 @@ def nav_panel_DAOPHOT_ui():
                         ui.nav_panel("PSF", nav_panel_PSF_ui("nav_panel_PSF"), value="PSF"),
                         ui.nav_panel("SUBTRACT", nav_panel_SUB_ui("nav_panel_SUB"), value="SUB"),
                         ui.nav_panel("ALLSTAR", nav_panel_ALLSTAR_ui("nav_panel_ALLSTAR"), value="ALLSTAR"),
+                        ui.nav_menu(
+                            "Settings",
+                            ui.nav_panel("DAOPHOT", nav_panel_opt_DAOPHOT_ui("nav_panel_opt_DAOPHOT"), value="opt_DAOPHOT"),
+                            ui.nav_panel("PHOTO", nav_panel_opt_PHOTO_ui("nav_panel_opt_PHOTO"), value="opt_PHOTO"),
+                            ui.nav_panel("ALLSTAR", nav_panel_opt_ALLSTAR_ui("nav_panel_opt_ALLSTAR"), value="opt_ALLSTAR"),
+                        ),
                         id="tabs_daophot",  
-                    )  
-                ),
+                    ),
+                ),  
                 col_widths=(6, 6),
             ),
         )
@@ -50,6 +59,9 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
     _ = nav_panel_PSF_server("nav_panel_PSF", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot)
     _ = nav_panel_SUB_server("nav_panel_SUB", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot)
     _ = nav_panel_ALLSTAR_server("nav_panel_ALLSTAR", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot)
+    _ = nav_panel_opt_DAOPHOT_server("nav_panel_opt_DAOPHOT", photfun_client, input_tabs_main, input.tabs_daophot)
+    _ = nav_panel_opt_PHOTO_server("nav_panel_opt_PHOTO", photfun_client, input_tabs_main, input.tabs_daophot)
+    _ = nav_panel_opt_ALLSTAR_server("nav_panel_opt_ALLSTAR", photfun_client, input_tabs_main, input.tabs_daophot)
 
     # Obtener la imagen FITS seleccionada
     @reactive.Calc

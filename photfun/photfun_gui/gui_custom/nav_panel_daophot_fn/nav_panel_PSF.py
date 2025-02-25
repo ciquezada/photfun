@@ -61,7 +61,14 @@ def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sidev
         ap_obj = selected_ap_table()
         lst_obj = selected_lst_table()
         if fits_obj and ap_obj and lst_obj:
-            photfun_client.psf(fits_obj.id, ap_obj.id, lst_obj.id)
+            try:
+                out_psf_obj, out_table_obj = photfun_client.psf(fits_obj.id, ap_obj.id, lst_obj.id)
+                ui.notification_show(f"PSF created\n -> [{out_psf_obj.id}] {out_psf_obj.alias}\n (Neighbors: [{out_table_obj.id}] {out_table_obj.alias})")
+            except Exception as e:
+                ui.notification_show(f"Error: {str(e)}", type="error")
+        else:
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        
         nav_table_sideview_update()
         update_select()
 

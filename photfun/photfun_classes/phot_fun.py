@@ -34,16 +34,19 @@ class PhotFun:
         table = PhotTable(path)
         table.id = next(self._id_counter)
         self.tables.append(table)
+        return table
 
     def add_fits(self, path):
         fits_file = PhotFits(path)
         fits_file.id = next(self._id_counter)
         self.fits_files.append(fits_file)
+        return fits_file
 
     def add_psf(self, path):
         psf_file = PhotPSF(path)
         psf_file.id = next(self._id_counter)
         self.psf_files.append(psf_file)
+        return psf_file
 
     def find(self, fits_id, sum_aver="1,1"):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
@@ -54,7 +57,8 @@ class PhotFun:
         output_dir = self.working_dir
         out_coo = os.path.join(output_dir, f"{os.path.basename(fits_obj.path).replace('.fits', '.coo')}")
         final_out_coo = find(fits_obj.path, os.path.join(self.working_dir, 'daophot.opt'), out_coo, sum_aver)
-        self.add_table(final_out_coo)
+        out_obj_table = self.add_table(final_out_coo)
+        return out_obj_table
 
     def phot(self, fits_id, coo_id):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
@@ -71,7 +75,8 @@ class PhotFun:
                                 os.path.join(self.working_dir, 'daophot.opt'), 
                                 os.path.join(self.working_dir, 'photo.opt'), 
                                 out_ap)
-        self.add_table(final_out_ap)
+        out_obj_table = self.add_table(final_out_ap)
+        return out_obj_table
 
     def pick(self, fits_id, ap_id, stars_minmag="200,20"):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
@@ -87,7 +92,8 @@ class PhotFun:
         final_out_lst = pick(fits_obj.path, ap_table.path, 
                                 os.path.join(self.working_dir, 'daophot.opt'), 
                                 out_lst, stars_minmag)
-        self.add_table(final_out_lst)
+        out_obj_table = self.add_table(final_out_lst)
+        return out_obj_table
 
     def psf(self, fits_id, ap_id, lst_id):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
@@ -107,8 +113,9 @@ class PhotFun:
         final_out_psf, final_out_nei = create_psf(fits_obj.path, ap_table.path, lst_table.path,
                                                     os.path.join(self.working_dir, 'daophot.opt'), 
                                                     out_psf, out_nei)
-        self.add_psf(final_out_psf)
-        self.add_table(final_out_nei)
+        out_obj_psf = self.add_psf(final_out_psf)
+        out_obj_table = self.add_table(final_out_nei)
+        return out_obj_psf, out_obj_table
 
     def sub(self, fits_id, psf_id, nei_id, lst_id=False):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
@@ -133,7 +140,8 @@ class PhotFun:
         final_out_subfits = sub_fits(fits_obj.path, psf_obj.path, nei_table.path,
                                         os.path.join(self.working_dir, 'daophot.opt'), 
                                         out_subfits, lst_table.path if lst_id else False)
-        self.add_fits(final_out_subfits)
+        out_obj_fits = self.add_fits(final_out_subfits)
+        return out_obj_fits
 
     def allstar(self, fits_id, psf_id, ap_id, RE=True):
         fits_obj = next(filter(lambda f: f.id==fits_id, self.fits_files), None)
@@ -154,8 +162,9 @@ class PhotFun:
                                                         os.path.join(self.working_dir, 'daophot.opt'), 
                                                         os.path.join(self.working_dir, 'allstar.opt'), 
                                                         out_als, out_subfits, RE=True)
-        self.add_table(final_out_als)
-        self.add_fits(final_out_subfits)
+        out_obj_table = self.add_table(final_out_als)
+        out_obj_fits = self.add_fits(final_out_subfits)
+        return out_obj_table, out_obj_fits
 
     def _save_opt_files(self):
         opt_files = {

@@ -51,8 +51,16 @@ def nav_panel_PICK_server(input, output, session, photfun_client, nav_table_side
         fits_obj = selected_fits()
         table_obj = selected_table()
         if fits_obj and table_obj:
-            photfun_client.pick(fits_obj.id, table_obj.id)
+            try:
+                out_table_obj = photfun_client.pick(fits_obj.id, table_obj.id)
+                ui.notification_show(f"Selected {out_table_obj.df.shape[0]} sources\n -> [{out_table_obj.id}] {out_table_obj.alias}")
+            except Exception as e:
+                ui.notification_show(f"Error: {str(e)}", type="error")
+        else:
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        
         nav_table_sideview_update()
         update_select()
 
     return
+

@@ -4,3 +4,6 @@ from .nav_panel_PICK import nav_panel_PICK_ui, nav_panel_PICK_server
 from .nav_panel_PSF import nav_panel_PSF_ui, nav_panel_PSF_server
 from .nav_panel_SUB import nav_panel_SUB_ui, nav_panel_SUB_server
 from .nav_panel_ALLSTAR import nav_panel_ALLSTAR_ui, nav_panel_ALLSTAR_server
+from .nav_panel_opt_DAOPHOT import nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server
+from .nav_panel_opt_PHOTO import nav_panel_opt_PHOTO_ui, nav_panel_opt_PHOTO_server
+from .nav_panel_opt_ALLSTAR import nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server

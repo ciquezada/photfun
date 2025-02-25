@@ -41,7 +41,14 @@ def nav_panel_FIND_server(input, output, session, photfun_client, nav_table_side
     def find_action():
         fits_obj = selected_fits()
         if fits_obj:
-            photfun_client.find(fits_obj.id)
+            try:
+                out_table_obj = photfun_client.find(fits_obj.id)
+                ui.notification_show(f"Found {out_table_obj.df.shape[0]} sources\n -> [{out_table_obj.id}] {out_table_obj.alias}")
+            except Exception as e:
+                ui.notification_show(f"Error: {str(e)}", type="error")
+        else:
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        
         nav_table_sideview_update()
         update_select()
 
