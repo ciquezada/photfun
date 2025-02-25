@@ -25,7 +25,7 @@ def server(input, output, session):
     _ = nav_panel_TABLE_server("nav_panel_TABLE", photfun_client, nav_table_sideview_update, tables_df)
     _ = nav_panel_DAOPHOT_server("nav_panel_DAOPHOT", photfun_client, nav_table_sideview_update, fits_df, tables_df, input.tabs_main)
 
-    photfun_client.add_fits("/data/ciquezada/Projects/py_photsuite/photfun/photfun_classes/input/12_white.fits")
+    # photfun_client.add_fits("/data/ciquezada/Projects/py_photsuite/photfun/photfun_classes/input/12_white.fits")
     # photfun_client.find(0)
     # photfun_client.phot(0, 1)
     # photfun_client.pick(0, 2)

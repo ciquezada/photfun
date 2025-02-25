@@ -8,7 +8,8 @@ def nav_table_sideview_ui():
             ui.output_data_frame("fits_df"),
             ui.output_data_frame("tables_df"),
             ui.output_data_frame("psf_df"),
-            width=500,
+            width="33%",
+            height="100%",
             open={"desktop": "open", "mobile": "closed"},
         )
     return m
@@ -31,8 +32,8 @@ def nav_table_sideview_server(input, output, session, photfun_client):
     def fits_df():
         return render.DataTable(
                     fits_data.get(),
-                    height=200,
-                    width=500,
+                    height="200px",
+                    width="100%",
                     selection_mode="row"
                 )
 
@@ -40,8 +41,8 @@ def nav_table_sideview_server(input, output, session, photfun_client):
     def tables_df():
         return render.DataTable(
                     tables_data.get(),
-                    height=200,
-                    width=500,
+                    height="200px",
+                    width="100%",
                     selection_mode="row"
                 )
 
@@ -49,8 +50,8 @@ def nav_table_sideview_server(input, output, session, photfun_client):
     def psf_df():
         return render.DataTable(
                     psf_data.get(),
-                    height=200,
-                    width=500,
+                    height="200px",
+                    width="100%",
                     selection_mode="row"
                 )
 
