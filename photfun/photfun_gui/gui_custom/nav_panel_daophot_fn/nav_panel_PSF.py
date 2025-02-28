@@ -69,7 +69,7 @@ def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sidev
         else:
             ui.notification_show("Error: FITS not selected.", type="warning")
         
-        nav_table_sideview_update()
+        nav_table_sideview_update(fits=False)
         update_select()
 
     return

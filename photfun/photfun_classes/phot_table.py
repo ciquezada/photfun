@@ -120,3 +120,43 @@ class PhotTable:
         df = pd.DataFrame(data, columns=col_names)
         df = df.astype({col: float for col in col_names if col != "ID"})  # Convertir todas menos ID a float
         return df
+
+    def subtable(self, out_path, selected_ids):
+        # Filtrar la tabla usando los IDs seleccionados
+        sub_df = self.df[self.df["ID"].isin(selected_ids)].copy()
+
+        if sub_df.empty:
+            raise ValueError("No matching IDs found in the table.")
+
+        # Guardar en el mismo formato que el archivo original
+        if self.table_type == "csv":
+            sub_df.to_csv(out_path, index=False)
+        elif self.table_type in ["fits", "fit"]:
+            hdu = fits.BinTableHDU(Table.from_pandas(sub_df))
+            hdu.writeto(out_path, overwrite=True)
+        elif self.table_type in ["vot", "xml"]:
+            table = Table.from_pandas(sub_df)
+            table.write(out_path, format="votable", overwrite=True)
+        else:  # Archivos separados por espacios o ASCII
+            if self.header:  # Si hay header, guardarlo
+                with open(out_path, "w") as f:
+                    keys = list(self.header.keys())
+                    values = list(self.header.values())
+
+                    # Escribir la primera línea con los nombres, respetando los anchos de columna
+                    f.write(f"{keys[0]:>3} {keys[1]:>5} {keys[2]:>5} " + 
+                            " ".join(f"{k:>7}" for k in keys[3:]) + "\n")
+
+                    # Escribir la segunda línea con los valores alineados
+                    f.write(f"{values[0]:>3} {values[1]:>5} {values[2]:>5} " + 
+                            " ".join(f"{v:>7}" for v in values[3:]) + "\n")
+
+                    f.write("\n")  # Línea en blanco entre el header y los datos
+                # sub_df.to_csv(out_path, sep=" ", index=False, header=False, mode="a")
+                # Formatear los datos con alineación fija
+                    for _, row in sub_df.iterrows():
+                        f.write(f"{int(row['ID']):>7} {row['X']:>8.3f} {row['Y']:>8.3f} " + 
+                                " ".join(f"{row[col]:>8.3f}" for col in sub_df.columns[3:]) + "\n")
+            else:
+                sub_df.to_csv(out_path, sep=" ", index=False)
+

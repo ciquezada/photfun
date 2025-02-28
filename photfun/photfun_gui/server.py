@@ -8,11 +8,9 @@ from pathlib import Path
 import os
 import pandas as pd
 from photfun.photfun_classes import PhotFun
-from photfun.photfun_gui.gui_custom import nav_table_sideview_server
-from photfun.photfun_gui.gui_custom import nav_panel_IMAGE_server
-from photfun.photfun_gui.gui_custom import nav_panel_TABLE_server
-from photfun.photfun_gui.gui_custom import nav_panel_DAOPHOT_server
-
+from photfun.photfun_gui.gui_custom import (nav_table_sideview_server, nav_panel_IMAGE_server, 
+                                            nav_panel_TABLE_server, nav_panel_DAOPHOT_server, 
+                                            nav_panel_SELECTION_server)
 
 app_dir = Path(__file__).parent
 
@@ -24,6 +22,7 @@ def server(input, output, session):
     _ = nav_panel_IMAGE_server("nav_panel_IMAGE", photfun_client, nav_table_sideview_update, fits_df)
     _ = nav_panel_TABLE_server("nav_panel_TABLE", photfun_client, nav_table_sideview_update, tables_df)
     _ = nav_panel_DAOPHOT_server("nav_panel_DAOPHOT", photfun_client, nav_table_sideview_update, fits_df, tables_df, input.tabs_main)
+    _ = nav_panel_SELECTION_server("nav_panel_SELECTION", photfun_client, nav_table_sideview_update, fits_df, tables_df)
 
     # photfun_client.add_fits("/data/ciquezada/Projects/py_photsuite/photfun/photfun_classes/input/12_white.fits")
     # photfun_client.find(0)
@@ -58,4 +57,5 @@ def server(input, output, session):
     @session.on_ended
     def on_ended():
         photfun_client.clean_up()
+        pass
 

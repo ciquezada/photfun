@@ -174,8 +174,8 @@ de un radio de ajuste del centroide se usarán en el ajuste. También se
 usa para ajustar la primera aproximación analítica a la PSF para las 
 estrellas PSF y contribuye en menor medida a la determinación de cuando 
 las estrellas se superponen "significativamente". Bajo circunstancias 
-normales, este radio debe ser del orden del doble del FWHM de una imagen 
-estelar, que es el mismo que el FWHM. Cuando la aglomeración es extremadamente 
+normales, este radio debe ser del orden del FWHM de una imagen 
+estelar. Cuando la aglomeración es extremadamente 
 severa, puede ser ventajoso usar un valor algo menor que esto. Por otro 
 lado, si se sabe que la PSF varía a través del marco, aumentar el radio 
 de ajuste más allá del FWHM puede mejorar la precisión fotométrica, siempre 

@@ -6,7 +6,8 @@ from shiny import module, reactive, render, ui
 from faicons import icon_svg
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, Normalize
+# from astropy.visualization import ZScaleInterval
 from photfun.photfun_gui.gui_custom.nav_panel_daophot_fn import (
     nav_panel_FIND_ui, nav_panel_FIND_server,
     nav_panel_PHOT_ui, nav_panel_PHOT_server,
@@ -94,8 +95,11 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
         
         fig, ax = plt.subplots(figsize=(7.5, 7.5))
         image_data = np.array(fits_image.data)
-        image_data[image_data < 0] = 1
-        ax.imshow(image_data, cmap='gray', norm=LogNorm())
+        image_data = np.nan_to_num(image_data, nan=0)
+        image_data[image_data < 0] = 0
+        # ax.imshow(image_data, cmap='gray', norm=LogNorm())
+        vmin, vmax = np.percentile(image_data, [25, 90])
+        ax.imshow(image_data, cmap='gray', norm=Normalize(vmin=vmin, vmax=vmax))
         ax.invert_yaxis()
         
         if table_df is not None and "X" in table_df and "Y" in table_df:

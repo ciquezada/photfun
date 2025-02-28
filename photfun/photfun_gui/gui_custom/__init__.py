@@ -3,4 +3,5 @@ from .nav_table_sideview import nav_table_sideview_ui, nav_table_sideview_server
 from .nav_panel_IMAGE import nav_panel_IMAGE_ui, nav_panel_IMAGE_server
 from .nav_panel_TABLE import nav_panel_TABLE_ui, nav_panel_TABLE_server
 from .nav_panel_DAOPHOT import nav_panel_DAOPHOT_ui, nav_panel_DAOPHOT_server
+from .nav_panel_SELECTION import nav_panel_SELECTION_ui, nav_panel_SELECTION_server
 

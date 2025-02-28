@@ -22,10 +22,13 @@ def nav_table_sideview_server(input, output, session, photfun_client):
     psf_data = reactive.Value(pd.DataFrame(columns=["PSF", "File"]))
     
     # Función para actualizar los DataFrames reactivos
-    def update_dataframes():
-        fits_data.set(pd.DataFrame([{"FITS": f.id, "File": f.alias} for f in photfun_client.fits_files]))
-        tables_data.set(pd.DataFrame([{"Table": t.id, "File": t.alias} for t in photfun_client.tables]))
-        psf_data.set(pd.DataFrame([{"PSF": p.id, "File": p.alias} for p in photfun_client.psf_files]))
+    def update_dataframes(fits=True, tables=True, psf=True):
+        if fits:
+            fits_data.set(pd.DataFrame([{"FITS": f.id, "File": f.alias} for f in photfun_client.fits_files]))
+        if tables:    
+            tables_data.set(pd.DataFrame([{"Table": t.id, "File": t.alias} for t in photfun_client.tables]))
+        if psf:
+            psf_data.set(pd.DataFrame([{"PSF": p.id, "File": p.alias} for p in photfun_client.psf_files]))
 
     # Renderizado de las tablas
     @render.data_frame
