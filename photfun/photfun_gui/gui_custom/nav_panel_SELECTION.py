@@ -38,6 +38,7 @@ def nav_panel_SELECTION_ui():
                                 "Optional advanced preview:",
                                 "",
                                 "Generate profile",
+                                "Generate profile faster",
                                 "Generate animated profile",
                                 "Generate animated 3d profile",
                             ],  # Opciones en el dropdown
