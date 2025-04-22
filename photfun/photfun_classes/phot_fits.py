@@ -1,44 +1,42 @@
+import sys
+sys.path.append("/data/ciquezada/Projects/py_photsuite")
+### ERASE AFTER
 import os
 import glob
 from astropy.io import fits
+from .phot_file import PhotFile
 
 
-class PhotFits:
-    def __init__(self, path):
-        if isinstance(path, list):  # Si es una carpeta
-            self.file_type = "list"
-            self.path_list = sorted(path)
-            indv_path = self.path_list[0] if self.path_list else None
-            self.alias = f"[>] {os.path.basename(indv_path)}"
-            self.path = os.path.abspath(indv_path)
-        elif os.path.isdir(path):  # Si es una lista de archivos
-            self.file_type = "dir"
-            self.path_list = sorted([
-                                    os.path.join(path, f) for f in os.listdir(path)
-                                    if os.path.isfile(os.path.join(path, f))
-                                ])
-            self.alias = f"[>] {os.path.basename(path)}"
-            self.path = os.path.abspath(path)
-        elif os.path.isfile(path):  # Si es un archivo único
-            self.file_type = "file"
-            self.path_list = None
-            self.alias = os.path.basename(path)
-            self.path = os.path.abspath(path)
-        else:  # Manejo de error si el path no es válido
-            raise ValueError(f"Invalid path: {path}")
-        # Verificar que todos los archivos tienen la misma extensión
-        if self.path_list:
-            extensions = {os.path.splitext(f)[1].lower() for f in self.path_list}
-            if len(extensions) > 1:
-                raise ValueError(f"Multiple file types detected: {extensions}. "
-                                "All files must have the same extension.")
-        elif self.file_type in ["list", "dir"]:
-            raise ValueError(f"The directory '{path}' is empty.")
-        self.header = None
-        self._image = None
-    
-    @property
-    def image(self):
-        if self._image is None:
-            self._image = fits.open(self.path)[0]
-        return self._image
+class PhotFits(PhotFile):
+    def __init__(self, path, *args, **kwargs):
+        super().__init__(path, *args, **kwargs)  # Hereda la lógica de PhotFile
+        self._image_cache = {}  # Diccionario para almacenar imágenes cargadas
+
+    def image(self, index=0):
+        """Carga y devuelve la imagen FITS del archivo en la posición `index`."""
+        if index < 0 or index >= len(self.path):
+            raise IndexError(f"Index {index} is out of range. Available files: 0 to {len(self.path) - 1}.")
+        
+        if index not in self._image_cache:  # Solo carga si no está en caché
+            self._image_cache[index] = fits.open(self.path[index])[0]
+
+        return self._image_cache[index]
+
+    def file_info(self, indx=0):
+        """Devuelve información básica del archivo en un diccionario."""
+        info = {
+            "Filename": os.path.basename(self.path[indx]),
+            "File type": self.file_type,
+            "File location": os.path.dirname(self.path[indx]),
+        }
+
+        try:
+            with fits.open(self.path[indx]) as hdul:
+                header = hdul[0].header  # Extrae el header de la extensión primaria
+                info["Header"] = {key: header[key] for key in header.keys()}  # Convierte el header en diccionario
+        except Exception as e:
+            info["Error"] = str(e)
+
+        return info
+
+

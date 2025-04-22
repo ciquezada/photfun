@@ -8,7 +8,7 @@ import shutil
 from subprocess import Popen, PIPE
 
 
-def pick(in_fits, in_ap, in_daophot, out_lst, stars_minmag="200,20", verbose=True):
+def pick(in_fits, in_ap, in_daophot, out_lst, stars_minmag="200,20", verbose=True) -> [".lst"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -17,7 +17,7 @@ def pick(in_fits, in_ap, in_daophot, out_lst, stars_minmag="200,20", verbose=Tru
         temp_fits = os.path.join(temp_dir, os.path.basename(in_fits))
         temp_ap = os.path.join(temp_dir, os.path.basename(in_ap))
         temp_daophot  = os.path.join(temp_dir, os.path.basename(in_daophot))
-        temp_lst  = os.path.join(temp_dir, os.path.basename(out_lst))
+        temp_lst  = os.path.join(temp_dir, "out_lst_file.lst")
         temp_log  = os.path.join(temp_dir, "pick.log")
         out_log = os.path.join(os.path.dirname(out_lst), "pick.log")
 

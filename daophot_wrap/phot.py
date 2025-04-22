@@ -8,7 +8,7 @@ import shutil
 from subprocess import Popen, PIPE
 
 
-def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True):
+def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True) -> [".ap"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -18,7 +18,7 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True):
         temp_coo = os.path.join(temp_dir, os.path.basename(in_coo))
         temp_daophot  = os.path.join(temp_dir, os.path.basename(in_daophot))
         temp_photo  = os.path.join(temp_dir, os.path.basename(in_photo))
-        temp_ap  = os.path.join(temp_dir, os.path.basename(out_ap))
+        temp_ap  = os.path.join(temp_dir, "out_ap_file.ap")
         temp_log  = os.path.join(temp_dir, "phot.log")
         out_log = os.path.join(os.path.dirname(out_ap), "phot.log")
 

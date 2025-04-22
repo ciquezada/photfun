@@ -8,7 +8,7 @@ import shutil
 from subprocess import Popen, PIPE
 
 
-def create_psf(in_fits, in_ap, in_lst, in_daophot, out_psf, out_nei, verbose=True):
+def create_psf(in_fits, in_ap, in_lst, in_daophot, out_psf, out_nei, verbose=True) -> [".psf", ".nei"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -18,7 +18,7 @@ def create_psf(in_fits, in_ap, in_lst, in_daophot, out_psf, out_nei, verbose=Tru
         temp_ap = os.path.join(temp_dir, os.path.basename(in_ap))
         temp_lst = os.path.join(temp_dir, os.path.basename(in_lst))
         temp_daophot  = os.path.join(temp_dir, os.path.basename(in_daophot))
-        temp_psf  = os.path.join(temp_dir, os.path.basename(out_psf))
+        temp_psf  = os.path.join(temp_dir, "out_psf_file.psf")
         temp_nei  =  os.path.join(temp_dir, 
                     f"{os.path.splitext(os.path.basename(temp_psf))[0]}.nei")
         temp_log  = os.path.join(temp_dir, "psf.log")

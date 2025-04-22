@@ -7,12 +7,17 @@ from matplotlib.colors import LogNorm, Normalize
 from PIL import Image
 from scipy.ndimage import map_coordinates
 from scipy.optimize import curve_fit
+from concurrent.futures import ThreadPoolExecutor
 
 
-def source_preview(row, fits_image):
+
+
+
+
+def source_preview(row, fits_image, n_jobs=1):
     # Coordenadas de la posición (X, Y) de la fuente
-    X_pos = int(row['X'])
-    Y_pos = int(row['Y'])
+    X_pos = float(row['X'])
+    Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
     size = 20
@@ -22,16 +27,16 @@ def source_preview(row, fits_image):
     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
 
     # Extraer el recorte de la imagen FITS
-    image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
-    vmin, vmax = np.percentile(image_data, [5, 95])
-    image_data = np.nan_to_num(image_data, nan=vmin)
-    image_data[image_data < vmin] = vmin
-    image_data = np.log10(image_data)
+    image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.0001
+    vmin, vmax = np.percentile(image_data, [2, 98])
+    # image_data = np.log10(image_data)
 
     # Crear la figura para la animación
     fig, ax = plt.subplots(figsize=(2, 2), dpi=200)
     # vmin, vmax = np.percentile(image_data, [5, 95])
-    ax.imshow(image_data, cmap='gray')
+    ax.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax))
     ax.invert_yaxis()
 
     # Guardar el frame de la animación
@@ -51,166 +56,164 @@ def source_preview(row, fits_image):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def generate_prof(row, fits_image):
+def generate_prof(row, fits_image, n_jobs=1):
     # Coordenadas de la posición (X, Y) de la fuente
-    X_pos = int(row['X'])
-    Y_pos = int(row['Y'])
+    X_pos = float(row['X'])
+    Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 20
+    size = 30
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
 
     # Extraer el recorte de la imagen FITS
-    image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+    image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.00001
     vmin, vmax = np.percentile(image_data, [5, 95])
-    image_data = np.nan_to_num(image_data, nan=vmin)
-    image_data[image_data < vmin] = vmin
-    image_data[~np.isfinite(image_data)] = vmin 
     image_data = np.log10(image_data)
-    y_min_plot, y_max_plot = np.nanpercentile(image_data, [5, 95])
+    image_data[~np.isfinite(image_data)] = vmin 
 
     img_width, img_height = 300, 300  # Tamaño fijo para todas las imágenes de la animación
 
-    all_profiles = []
-    angles = np.linspace(0, 180, num=90)  # 36 pasos (cada 5 grados)
+    angles = np.linspace(0, 180, num=90)  # 30 ángulos
     
-    fig, axs = plt.subplots(1, 1, figsize=(2, 2), dpi=200)
-    for angle in angles:
-        # Coordenadas de la línea
-        length = size // 2
+    # Función para procesar cada ángulo en paralelo
+    def process_angle(angle):
         theta = np.deg2rad(angle)
+        length = size // 2
         x1, y1 = X_pos + length * np.cos(theta), Y_pos + length * np.sin(theta)
         x2, y2 = X_pos - length * np.cos(theta), Y_pos - length * np.sin(theta)
         
-        # Puntos de la línea
-        num_points = 100
+        num_points = 150
         x_vals = np.linspace(x1, x2, num_points)
         y_vals = np.linspace(y1, y2, num_points)
         
-        # Extraer valores de la imagen a lo largo de la línea
         line_values = map_coordinates(image_data, [y_vals - y_min, x_vals - x_min], order=1, mode='nearest')
 
-        
-        # Graficar la intensidad a lo largo de la línea
+        # Alineación por máximo central
+        N = len(line_values)
+        center_mask = N // 2
+        start_mask = center_mask - 10
+        end_mask = start_mask + 20
+        mask = line_values[start_mask:end_mask]
+        max_mask = np.argmax(mask)
+        indx_max = start_mask + max_mask
+        shift = center_mask - indx_max
+        return np.roll(line_values, shift)[25:125]
+
+    # Procesamiento paralelo con ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        all_profiles = list(executor.map(process_angle, angles))
+
+    # Configurar figura y graficar resultados
+    fig, axs = plt.subplots(1, 1, figsize=(2, 2), dpi=200)
+    for line_values in all_profiles:
         axs.plot(line_values, color='gray', alpha=0.7, lw=0.5)
-        axs.set_ylim(y_min_plot, y_max_plot * 1.3)
-        axs.set_xlim(0, 100)
-        # axs.set_title("Intensity Profile")
-        # axs.set_xlabel("Position along line")
-        # axs.set_ylabel("Intensity")
-        plt.tight_layout()
-        
-        all_profiles.append(line_values)
-        
-        # Dibujar cada perfil con transparencia
-        # plt.plot(line_values, color='gray', alpha=0.05, lw=0.5)
     
-    # Calcular el perfil promedio y graficarlo
+    # Calcular perfil promedio
     mean_profile = np.mean(all_profiles, axis=0)
     axs.plot(mean_profile, color='red', lw=0.5, label='Promedio')
-        
-    # Guardar el frame de la animación
+    y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
+    axs.set_ylim(y_min_plot, y_max_plot * 1.3)
+    axs.set_xlim(0, 100)
+    plt.tight_layout()
+
+    # Generar GIF
     buf = BytesIO()
     plt.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
-
-    # Convertir el frame a GIF (solo un frame por ahora)
-    frames = [imageio.imread(buf)]  # Solo un frame ya que no estamos animando más
-
-    # Convertir los frames a GIF con loop infinito
+    frames = [imageio.imread(buf)]
     gif_buffer = BytesIO()
-    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)  # loop=0 para repetir
+    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)
     gif_buffer.seek(0)
-
     plt.close(fig)
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def generate_prof_fast(row, fits_image):
+def generate_prof_fast(row, fits_image, n_jobs=1):
     # Coordenadas de la posición (X, Y) de la fuente
-    X_pos = int(row['X'])
-    Y_pos = int(row['Y'])
+    X_pos = float(row['X'])
+    Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 20
+    size = 30
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
 
     # Extraer el recorte de la imagen FITS
-    image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+    image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.00001
     vmin, vmax = np.percentile(image_data, [5, 95])
-    image_data = np.nan_to_num(image_data, nan=vmin)
-    image_data[image_data < vmin] = vmin
-    image_data[~np.isfinite(image_data)] = vmin 
     image_data = np.log10(image_data)
-    y_min_plot, y_max_plot = np.nanpercentile(image_data, [5, 95])
+    image_data[~np.isfinite(image_data)] = vmin 
 
     img_width, img_height = 300, 300  # Tamaño fijo para todas las imágenes de la animación
 
-    all_profiles = []
-    angles = np.linspace(0, 180, num=30)  # 36 pasos (cada 5 grados)
+    angles = np.linspace(0, 180, num=30)  # 30 ángulos
     
-    fig, axs = plt.subplots(1, 1, figsize=(2, 2), dpi=200)
-    for angle in angles:
-        # Coordenadas de la línea
-        length = size // 2
+    # Función para procesar cada ángulo en paralelo
+    def process_angle(angle):
         theta = np.deg2rad(angle)
+        length = size // 2
         x1, y1 = X_pos + length * np.cos(theta), Y_pos + length * np.sin(theta)
         x2, y2 = X_pos - length * np.cos(theta), Y_pos - length * np.sin(theta)
         
-        # Puntos de la línea
-        num_points = 100
+        num_points = 150
         x_vals = np.linspace(x1, x2, num_points)
         y_vals = np.linspace(y1, y2, num_points)
         
-        # Extraer valores de la imagen a lo largo de la línea
         line_values = map_coordinates(image_data, [y_vals - y_min, x_vals - x_min], order=1, mode='nearest')
 
-        
-        # Graficar la intensidad a lo largo de la línea
+        # Alineación por máximo central
+        N = len(line_values)
+        center_mask = N // 2
+        start_mask = center_mask - 10
+        end_mask = start_mask + 20
+        mask = line_values[start_mask:end_mask]
+        max_mask = np.argmax(mask)
+        indx_max = start_mask + max_mask
+        shift = center_mask - indx_max
+        return np.roll(line_values, shift)[25:125]
+
+    # Procesamiento paralelo con ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        all_profiles = list(executor.map(process_angle, angles))
+
+    # Configurar figura y graficar resultados
+    fig, axs = plt.subplots(1, 1, figsize=(2, 2), dpi=200)
+    for line_values in all_profiles:
         axs.plot(line_values, color='gray', alpha=0.7, lw=0.5)
-        axs.set_ylim(y_min_plot, y_max_plot * 1.3)
-        axs.set_xlim(0, 100)
-        # axs.set_title("Intensity Profile")
-        # axs.set_xlabel("Position along line")
-        # axs.set_ylabel("Intensity")
-        plt.tight_layout()
-        
-        all_profiles.append(line_values)
-        
-        # Dibujar cada perfil con transparencia
-        # plt.plot(line_values, color='gray', alpha=0.05, lw=0.5)
     
-    # Calcular el perfil promedio y graficarlo
+    # Calcular perfil promedio
     mean_profile = np.mean(all_profiles, axis=0)
     axs.plot(mean_profile, color='red', lw=0.5, label='Promedio')
-        
-    # Guardar el frame de la animación
+    y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
+    axs.set_ylim(y_min_plot, y_max_plot * 1.3)
+    axs.set_xlim(0, 100)
+    plt.tight_layout()
+
+    # Generar GIF
     buf = BytesIO()
     plt.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
-
-    # Convertir el frame a GIF (solo un frame por ahora)
-    frames = [imageio.imread(buf)]  # Solo un frame ya que no estamos animando más
-
-    # Convertir los frames a GIF con loop infinito
+    frames = [imageio.imread(buf)]
     gif_buffer = BytesIO()
-    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)  # loop=0 para repetir
+    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)
     gif_buffer.seek(0)
-
     plt.close(fig)
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def generate_prof_animation(row, fits_image):
+def generate_prof_animation(row, fits_image, n_jobs=1):
     # Coordenadas de la posición (X, Y) de la fuente
-    X_pos = int(row['X'])
-    Y_pos = int(row['Y'])
+    X_pos = float(row['X'])
+    Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
     size = 20
@@ -220,12 +223,12 @@ def generate_prof_animation(row, fits_image):
     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
 
     # Extraer el recorte de la imagen FITS
-    image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+    image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.0001
     vmin, vmax = np.percentile(image_data, [5, 95])
-    image_data = np.nan_to_num(image_data, nan=vmin)
-    image_data[image_data < vmin] = vmin
-    image_data[~np.isfinite(image_data)] = vmin 
     image_data = np.log10(image_data)
+    image_data[~np.isfinite(image_data)] = vmin 
     y_min_plot, y_max_plot = np.nanpercentile(image_data, [5, 95])
 
     img_width, img_height = 300, 300  # Tamaño fijo para todas las imágenes de la animación
@@ -289,10 +292,10 @@ def generate_prof_animation(row, fits_image):
         
         # plt.close(fig)
 
-def generate_rotation_animation(row, fits_image):
+def generate_rotation_animation(row, fits_image, n_jobs=1):
     # Coordenadas de la posición (X, Y) de la fuente
-    X_pos = int(row['X'])
-    Y_pos = int(row['Y'])
+    X_pos = float(row['X'])
+    Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
     size = 20
@@ -302,10 +305,10 @@ def generate_rotation_animation(row, fits_image):
     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
 
     # Extraer el recorte de la imagen FITS
-    image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+    image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.0001
     vmin, vmax = np.percentile(image_data, [5, 95])
-    image_data = np.nan_to_num(image_data, nan=vmin)
-    image_data[image_data < vmin] = vmin
 
     # Crear la figura para la proyección 3D
     fig_3d = plt.figure(figsize=(2, 2), dpi=150)  # Reducir la resolución para mejorar rendimiento
@@ -382,12 +385,12 @@ def generate_rotation_animation(row, fits_image):
 #     y_max = min(Y_pos + radius // 2, fits_image.data.shape[0])
 
 #     # Extraer el recorte de la imagen FITS
-#     image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+#     image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
     
 #     # Definir el radio de ajuste
 
 #     # Extraer el recorte y transformar en logaritmo
-#     image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+#     image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
 #     vmin, vmax = np.percentile(image_data, [5, 99])
 #     image_data = np.nan_to_num(image_data, nan=vmin, posinf=vmax, neginf=vmin)
 #     image_data[image_data < vmin] = vmin
@@ -422,12 +425,12 @@ def generate_rotation_animation(row, fits_image):
 #     y_max = min(Y_pos + radius // 2, fits_image.data.shape[0])
 
 #     # Extraer el recorte de la imagen FITS
-#     image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+#     image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
     
 #     # Definir el radio de ajuste
 
 #     # Extraer el recorte y transformar en logaritmo
-#     image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+#     image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
 #     vmin, vmax = np.percentile(image_data, [5, 95])
 #     image_data = np.nan_to_num(image_data, nan=vmin, posinf=vmax, neginf=vmin)
 #     image_data[image_data < vmin] = vmin
@@ -480,7 +483,7 @@ def generate_rotation_animation(row, fits_image):
 #     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
 
 #     # Extraer el recorte de la imagen FITS
-#     image_data = np.array(fits_image.data)[y_min:y_max, x_min:x_max]
+#     image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
 #     image_data = np.nan_to_num(image_data, nan=0)
 #     image_data[image_data < 0] = 0
 
@@ -530,4 +533,60 @@ def generate_rotation_animation(row, fits_image):
 #     imageio.mimsave(gif_buffer, frames, format="gif", duration=0.1, loop=0)
 #     gif_buffer.seek(0)
     
+#     return base64.b64encode(gif_buffer.getvalue()).decode()
+
+# def generate_rotation_animation(row, fits_image, n_jobs=1):
+#     # Coordenadas y preparación de datos
+#     X_pos = float(row['X'])
+#     Y_pos = float(row['Y'])
+#     size = 20
+    
+#     # Recorte de la imagen (igual que antes)
+#     x_min = max(X_pos - size // 2, 0)
+#     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
+#     y_min = max(Y_pos - size // 2, 0)
+#     y_max = min(Y_pos + size // 2, fits_image.data.shape[0])
+    
+#     image_data = np.array(fits_image.data)[int(y_min):int(y_max), int(x_min):int(x_max)]
+#     image_data = np.nan_to_num(image_data, nan=0)
+#     image_data[image_data <= 0] = 0.0001
+#     vmin, vmax = np.percentile(image_data, [5, 95])
+#     img_width, img_height = 300, 300
+
+#     # Función para generar cada frame en paralelo
+#     def generate_frame(angle):
+#         fig = plt.figure(figsize=(2, 2), dpi=150)
+#         ax = fig.add_subplot(111, projection='3d')
+#         X, Y = np.meshgrid(np.arange(image_data.shape[1]), np.arange(image_data.shape[0]))
+        
+#         ax.plot_surface(X, Y, np.log10(image_data), cmap='inferno', edgecolor='none')
+#         ax.view_init(azim=angle, elev=20)
+#         ax.set_xticks([])
+#         ax.set_yticks([])
+#         ax.set_zticks([])
+        
+#         buf = BytesIO()
+#         plt.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+#         plt.close(fig)
+#         buf.seek(0)
+        
+#         img = imageio.imread(buf)
+#         return np.array(Image.fromarray(img).resize((img_width, img_height))), angle
+
+#     # Procesamiento paralelo de frames
+#     angles = list(np.linspace(0, 180, 30))
+#     # Procesamiento paralelo con ThreadPoolExecutor
+#     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+#         frames = list(executor.map(generate_frame, angles))
+#         frames = sorted(frames, key=lambda x: x[1])
+#         frames = [fr[0] for fr in frames]
+    
+#     # Crear animación con rebote
+#     frames += frames[::-1]
+    
+#     # Generar GIF
+#     gif_buffer = BytesIO()
+#     imageio.mimsave(gif_buffer, frames, format="gif", duration=0.2, loop=0)
+#     gif_buffer.seek(0)
+
 #     return base64.b64encode(gif_buffer.getvalue()).decode()

@@ -8,11 +8,11 @@ import shutil
 from subprocess import Popen, PIPE
 
 
-def sub_fits(in_fits, in_psf, in_sub, in_daophot, out_fits, in_lst=False, verbose=True):
+def sub_fits(in_fits, in_psf, in_sub, in_daophot, out_fits, in_lst=False, verbose=True) -> [".fits"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
-        out_filename = os.path.splitext(os.path.basename(out_fits))[0]
+        out_filename = "out_subtracted_fits"
         # Crear carpeta temporal
         temp_dir = os.path.abspath(temp_mkdir(f"{filename}_SUB_0"))
         temp_fits = os.path.join(temp_dir, os.path.basename(in_fits))

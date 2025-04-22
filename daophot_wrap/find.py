@@ -8,7 +8,7 @@ import shutil
 from subprocess import Popen, PIPE
 
 
-def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True): 
+def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True) -> [".coo"]: 
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]

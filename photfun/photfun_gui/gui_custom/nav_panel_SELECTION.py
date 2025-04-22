@@ -46,7 +46,7 @@ def nav_panel_SELECTION_ui():
                 ),
                 col_widths=(4,4,4)
             ),
-            ui.div(style="heigth: 50px; display: inline-block;"),
+            # ui.div(style="heigth: 50px; display: inline-block;"),
             ui.output_ui("cards_ui")
         )
     return m
@@ -63,7 +63,7 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
             return None
         selected_id = selected_row.iloc[0]["FITS"]
         fits_obj = next((f for f in photfun_client.fits_files if f.id == selected_id), None)
-        return fits_obj.image if fits_obj else None
+        return fits_obj.image(0) if fits_obj else None
 
     # Obtener la tabla seleccionada
     @reactive.Calc
@@ -73,7 +73,7 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
             return None
         selected_id = selected_row.iloc[0]["Table"]
         table_obj = next((f for f in photfun_client.tables if f.id == selected_id), None)
-        return table_obj.df if table_obj else None
+        return table_obj.df(0) if table_obj else None
 
     # Graficar la imagen FITS con posiciones de la tabla si está disponible
     @render.plot()
@@ -105,9 +105,6 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
     def table_preview():
         table_df = selected_table()
         return table_df  # Retorna el DataFrame para visualizarlo
-
-
-
 
     @render.ui
     @reactive.event(input.load_selection)
@@ -148,7 +145,7 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
 
                 img_data = preview_functions["Source preview"](row, fits_image)
                 adv_func = preview_functions[input.selected_function()]
-                img_data_adv = adv_func(row, fits_image) if adv_func else None # Genera la animación
+                img_data_adv = adv_func(row, fits_image, photfun_client.n_jobs) if adv_func else None # Genera la animación
 
                 # Obtener MAG si existe en la fila
                 mag_value = next((row[col] for col in row.index if 'mag' in col.lower()), None)
@@ -198,19 +195,122 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
         for checkbox_group in range(2):  # Se asume que hay 2 grupos
             selected_ids += [i for i in input[f"selected_cards_{checkbox_group}"]()]
         output_dir = photfun_client.working_dir
-        table_name = os.path.splitext(os.path.basename(table_obj.path))[0]
-        out_subtable = os.path.join(output_dir, f"{table_name}_sub.{table_obj.table_type}")
+        table_name = os.path.splitext(os.path.basename(table_obj.path[0]))[0]
+        out_subtable = os.path.join(output_dir, f"{table_name}_sel{table_obj.file_type}")
         temp_dir = os.path.abspath(temp_mkdir(f"{table_name}_subselection_0"))
-        temp_table = os.path.join(temp_dir, os.path.basename(table_obj.path))
+        temp_table = os.path.join(temp_dir, os.path.basename(table_obj.path[0]))
         table_obj.subtable(temp_table, selected_ids)
         final_out_subtable = move_file_noreplace(temp_table, out_subtable)
         new_table_obj = photfun_client.add_table(final_out_subtable)
         shutil.rmtree(temp_dir)
         nav_table_sideview_update()
-        ui.notification_show(f"Selected {new_table_obj.df.shape[0]} sources\n -> [{new_table_obj.id}] {new_table_obj.alias}")
+        ui.notification_show(f"Selected {new_table_obj.df(0).shape[0]} sources\n -> [{new_table_obj.id}] {new_table_obj.alias}")
 
 
+    # @render.ui
+    # @reactive.event(input.load_selection)
+    # def cards_ui():
+    #     import concurrent.futures
+    #     from functools import partial
+        
+    #     selected_row = tables_df.data_view(selected=True)
+    #     if selected_row.empty:
+    #         return ui.notification_show(f"Error: Select a Table", type="error")
+    #     id_current_preview.set(selected_row.iloc[0]["Table"])
 
+    #     preview_functions = {
+    #         "Optional advanced preview:": None,
+    #         "Source preview": source_preview,
+    #         "Generate profile": generate_prof,
+    #         "Generate profile faster": generate_prof_fast,
+    #         "Generate animated profile": generate_prof_animation,
+    #         "Generate animated 3d profile": generate_rotation_animation
+    #     }
 
+    #     table_df = selected_table()
+    #     fits_image = selected_fits()
 
+    #     mag_col = next((col for col in table_df.columns if 'mag' in col.lower()), None)
+    #     if mag_col:
+    #         table_df = table_df.sort_values(by=mag_col)
 
+    #     start_time = time.time()
+    #     cards = []
+        
+    #     # Función para procesamiento paralelo
+    #     def process_row(row, selected_func, fits_img):
+    #         try:
+    #             img_data = source_preview(row, fits_img)
+    #             adv_func = preview_functions.get(selected_func)
+    #             img_data_adv = adv_func(row, fits_img) if adv_func else None
+                
+    #             mag_value = next((row[col] for col in row.index if 'mag' in col.lower()), None)
+    #             header = f"{row['ID']} - MAG: {mag_value}" if mag_value else f"{row['ID']}"
+                
+    #             return (row['ID'], img_data, img_data_adv, header)
+    #         except Exception as e:
+    #             print(f"Error procesando fila {row['ID']}: {str(e)}")
+    #             return None
+
+    #     # Configurar paralelismo
+    #     num_workers = os.cpu_count() - 1 or 1
+    #     processed = 0
+    #     total_rows = len(table_df)
+        
+    #     with ui.Progress(min=1, max=total_rows) as p, \
+    #         concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            
+    #         p.set(message="Preparando procesamiento paralelo...")
+            
+    #         # Crear partial function con parámetros fijos
+    #         process_func = partial(
+    #             process_row,
+    #             selected_func=input.selected_function(),
+    #             fits_img=fits_image
+    #         )
+            
+    #         # Enviar tareas al executor
+    #         futures = [executor.submit(process_func, row) for _, row in table_df.iterrows()]
+            
+    #         # Procesar resultados conforme se completan
+    #         for future in concurrent.futures.as_completed(futures, timeout=300):
+    #             processed += 1
+    #             elapsed = time.time() - start_time
+    #             remaining = (elapsed / processed) * (total_rows - processed) if processed > 0 else 0
+    #             remaining_str = str(timedelta(seconds=int(remaining))) if processed > 1 else "Estimando..."
+                
+    #             p.set(
+    #                 processed,
+    #                 message="Generando vistas previas",
+    #                 detail=f"Tiempo restante: {remaining_str}"
+    #             )
+                
+    #             result = future.result()
+    #             if result:
+    #                 row_id, img_data, img_data_adv, header = result
+    #                 card = ui.card(
+    #                     ui.card_header(header),
+    #                     ui.layout_columns(
+    #                         ui.img(src=f"data:image/gif;base64,{img_data}", width="100%"),
+    #                         ui.img(src=f"data:image/gif;base64,{img_data_adv}", width="100%") if img_data_adv else None,
+    #                         col_widths=(6, 6) if img_data_adv else (12,),
+    #                     ),
+    #                 )
+    #                 cards.append((row_id, card))
+
+    #     # Organizar columnas
+    #     num_columns = 2
+    #     split_cards = [cards[i::num_columns] for i in range(num_columns)]
+        
+    #     columns = []
+    #     for idx, card_group in enumerate(split_cards):
+    #         checkbox_group = ui.input_checkbox_group(
+    #             f"selected_cards_{idx}", 
+    #             "", 
+    #             choices={i: card for (i, card) in card_group}, 
+    #             selected=[i for (i, _) in card_group],
+    #             width="100%"
+    #         )
+    #         columns.append(checkbox_group)
+        
+    #     return ui.layout_columns(*columns, col_widths=(6, 6))
