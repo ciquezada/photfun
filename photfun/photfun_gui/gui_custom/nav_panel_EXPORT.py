@@ -1,12 +1,9 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 # photfun/photfun_gui/gui_export.py
 from shiny import module, reactive, render, ui
 from faicons import icon_svg
 import tempfile
 import os
-from photfun.photfun_gui.gui_custom import output_save_location_ui, output_save_location_server
+from . import output_save_location_ui, output_save_location_server
 
 @module.ui
 def nav_panel_EXPORT_ui():

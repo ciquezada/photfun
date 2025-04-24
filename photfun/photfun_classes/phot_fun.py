@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 import os
 import sys
 import time
@@ -9,11 +6,11 @@ from itertools import count
 from .phot_table import PhotTable
 from .phot_fits import PhotFits
 from .phot_psf import PhotPSF
-from daophot_wrap import (find, phot, pick, create_psf, 
+from ..daophot_wrap import (find, phot, pick, create_psf, 
                         sub_fits, allstar, daomatch, 
                         create_master)
-from photfun.daophot_opt import opt_daophot_dict, opt_photo_dict, opt_allstar_dict
-from misc_tools import temp_mkdir, copy_file_noreplace
+from ..daophot_opt import opt_daophot_dict, opt_photo_dict, opt_allstar_dict
+from ..misc_tools import temp_mkdir, copy_file_noreplace
 import numpy as np
 from joblib import Parallel, delayed, parallel_backend
 import nest_asyncio
@@ -75,7 +72,7 @@ def delayed_wrap(func):
 
 class PhotFun:
     def __init__(self):
-        self.n_jobs = 16
+        self.n_jobs = -1
         self._id_counter = count(start=0, step=1)
         self.tables = []
         self.fits_files = []

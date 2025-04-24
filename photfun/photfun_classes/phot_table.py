@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 from .phot_file import PhotFile
 import pandas as pd
 import os

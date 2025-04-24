@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 from shiny import reactive, render
 from shiny.types import FileInfo
 from shiny import App, ui
@@ -12,9 +9,9 @@ import tempfile
 from astropy.io.votable import from_table, writeto
 from astropy.table import Table as astroTable
 from urllib.parse import urlparse
-from misc_tools import move_file_noreplace
-from photfun.photfun_classes import PhotFun
-from photfun.photfun_gui.gui_custom import (nav_table_sideview_server, nav_panel_IMAGE_server, 
+from ..misc_tools import move_file_noreplace
+from ..photfun_classes import PhotFun
+from .gui_custom import (nav_table_sideview_server, nav_panel_IMAGE_server, 
                                             nav_panel_TABLE_server, nav_panel_DAOPHOT_server, 
                                             nav_panel_SELECTION_server, nav_panel_EXPORT_server,
                                             nav_panel_LOGS_server, SAMPclient)
@@ -35,7 +32,6 @@ def server(input, output, session):
     _ = nav_panel_SELECTION_server("nav_panel_SELECTION", photfun_client, nav_table_sideview_update, fits_df, tables_df)
     _ = nav_panel_EXPORT_server("nav_panel_EXPORT", photfun_client, input.tabs_main)
     _ = nav_panel_LOGS_server("nav_panel_LOGS", photfun_client)
-
 
     nav_table_sideview_update()
 

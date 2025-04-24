@@ -1,7 +1,4 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
-from misc_tools import check_file, temp_mkdir, move_file_noreplace
+from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil

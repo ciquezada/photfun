@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 import os
 from shiny import module, reactive, render, ui
 from faicons import icon_svg
@@ -8,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
 # from astropy.visualization import ZScaleInterval
-from photfun.photfun_gui.gui_custom.nav_panel_daophot_fn import (
+from .nav_panel_daophot_fn import (
     nav_panel_FIND_ui, nav_panel_FIND_server,
     nav_panel_PHOT_ui, nav_panel_PHOT_server,
     nav_panel_PICK_ui, nav_panel_PICK_server,

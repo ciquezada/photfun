@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 import os
 from shiny import module, reactive, render, ui
 import matplotlib.pyplot as plt
@@ -8,9 +5,9 @@ import numpy as np
 from matplotlib.colors import LogNorm, Normalize
 import time
 from datetime import timedelta
-from photfun.photfun_gui.gui_custom.plot_preview_tools import (source_preview, generate_prof, generate_prof_fast, 
+from .plot_preview_tools import (source_preview, generate_prof, generate_prof_fast, 
                                                                 generate_prof_animation, generate_rotation_animation)
-from misc_tools import temp_mkdir, move_file_noreplace
+from ...misc_tools import temp_mkdir, move_file_noreplace
 import shutil
 
 

@@ -1,7 +1,4 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
-from misc_tools import daophot_pbar
+from ....misc_tools import daophot_pbar
 from shiny import module, reactive, render, ui
 from faicons import icon_svg  # Para iconos en botones
 
@@ -59,7 +56,6 @@ def nav_panel_FIND_server(input, output, session, photfun_client, nav_table_side
     @reactive.event(input_tabs_main)
     def _():
         if input_tabs_main()=="DAOPHOT":
-            print("update!")
             update_select()
             update_settings()
     
@@ -68,7 +64,6 @@ def nav_panel_FIND_server(input, output, session, photfun_client, nav_table_side
     @reactive.event(input_tabs_daophot)
     def _():
         if input_tabs_daophot()=="FIND":
-            print("update!")
             update_select()
             update_settings()
 

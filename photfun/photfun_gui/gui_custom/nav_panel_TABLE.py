@@ -1,11 +1,8 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 import os
 from shiny import module, reactive, render, ui
 from faicons import icon_svg
 import pandas as pd
-from photfun.photfun_gui.gui_custom import input_local_file_ui, input_local_file_server
+from . import input_local_file_ui, input_local_file_server
 import tempfile
 from astropy.io.votable import from_table, writeto
 from astropy.table import Table

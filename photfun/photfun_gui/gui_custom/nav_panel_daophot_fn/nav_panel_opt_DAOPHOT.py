@@ -1,6 +1,6 @@
 from shiny import module, reactive, render, ui
 from faicons import icon_svg  # Para iconos en botones
-from photfun.daophot_opt import opt_daophot_labels, info_docstrings
+from ....daophot_opt import opt_daophot_labels, info_docstrings
 
 def generate_inputs(daophot_opt):
     inputs = []

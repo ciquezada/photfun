@@ -1,7 +1,4 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
-from misc_tools import daophot_pbar
+from ....misc_tools import daophot_pbar
 from shiny import module, reactive, render, ui
 from faicons import icon_svg  # Para iconos en botones
 

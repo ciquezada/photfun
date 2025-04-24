@@ -1,11 +1,8 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 from pathlib import Path
 import os
 from shiny import App, ui
-from server import server
-from photfun.photfun_gui.gui_custom import (nav_table_sideview_ui, nav_panel_IMAGE_ui, 
+from .server import server
+from .gui_custom import (nav_table_sideview_ui, nav_panel_IMAGE_ui, 
                                             nav_panel_TABLE_ui, nav_panel_DAOPHOT_ui, 
                                             nav_panel_SELECTION_ui, nav_panel_EXPORT_ui,
                                             nav_panel_LOGS_ui)
@@ -15,6 +12,10 @@ app_dir = Path(__file__).parent
 app_ui = ui.page_fillable(
     ui.tags.head(
         ui.tags.style("""
+        	:root {
+    			--bslib-sidebar-main-bg: #f8f8f8;
+  			}
+  
             .main-header {
                 background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
                             url('https://images.unsplash.com/photo-1465101162946-4377e57745c3?auto=format&fit=crop&w=1920&q=80');
@@ -75,12 +76,14 @@ app_ui = ui.page_fillable(
         ),
         style="padding: 2rem; width: 100%; height: 60vh;"
     ),
-    ui.include_css(app_dir / "styles.css"),
     fillable=True,
     fillable_mobile=True,
     fullscreen=True,
 )
 app = App(app_ui, server)
+
+def run_photfun():
+    app.run()
 
 if __name__ == "__main__":
     app.run()

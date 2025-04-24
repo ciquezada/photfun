@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/data/ciquezada/Projects/py_photsuite")
-### ERASE AFTER
 import os
 from shiny import module, reactive, render, ui
 from faicons import icon_svg
@@ -9,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
 from pprint import pformat  # Import pprint para formateo de texto
-from photfun.photfun_gui.gui_custom import input_local_file_ui, input_local_file_server
+from . import input_local_file_ui, input_local_file_server
 
 @module.ui
 def nav_panel_IMAGE_ui():
