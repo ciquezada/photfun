@@ -1,5 +1,9 @@
 from setuptools import setup, find_packages
 
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name='photfun',
     version='0.1.1',
@@ -41,6 +45,8 @@ by integrating them into an accessible and intuitive graphical user interface.
 Credits: by Carlos Quezada
             inspired in the work of Alvaro Valenzuela
             thanks to DAOPHOT by Peter Stetson""",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     license='MIT',
     keywords=['daophot', 'astronomical', 'python'],
     url='https://github.com/ciquezada/photfun'
