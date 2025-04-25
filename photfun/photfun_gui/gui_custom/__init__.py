@@ -6,5 +6,6 @@ from .nav_panel_IMAGE import nav_panel_IMAGE_ui, nav_panel_IMAGE_server
 from .nav_panel_TABLE import nav_panel_TABLE_ui, nav_panel_TABLE_server
 from .nav_panel_DAOPHOT import nav_panel_DAOPHOT_ui, nav_panel_DAOPHOT_server
 from .nav_panel_SELECTION import nav_panel_SELECTION_ui, nav_panel_SELECTION_server
+from .nav_panel_PHOTCUBE import nav_panel_PHOTCUBE_ui, nav_panel_PHOTCUBE_server
 from .nav_panel_EXPORT import nav_panel_EXPORT_ui, nav_panel_EXPORT_server
 from .nav_panel_LOGS import nav_panel_LOGS_ui, nav_panel_LOGS_server

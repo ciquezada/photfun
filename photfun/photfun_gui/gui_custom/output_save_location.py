@@ -14,7 +14,7 @@ ROOT_PATH = os.getcwd()
 @module.ui
 def output_save_location_ui(label="Select Save Location"):
     return ui.page_fluid(
-        ui.input_action_button("button_open", label, width="100%")
+        ui.input_action_button("button_open", label, width="auto")
     )
 
 @module.server

@@ -106,7 +106,7 @@ def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sidev
         lst_obj = selected_lst_table()
         if fits_obj and ap_obj and lst_obj:
             try:
-                with ui.Progress(min=0, max=max(len(fits_obj.path), len(ap_obj.path))) as p:
+                with ui.Progress(min=0, max=1) as p:
                     pbar = daophot_pbar(p, "PSF")
                     out_psf_obj, out_table_obj = photfun_client.psf(fits_obj.id, ap_obj.id, lst_obj.id, pbar=pbar)
                 ui.notification_show(f"PSF created\n -> [{out_psf_obj.id}] {out_psf_obj.alias}\n (Neighbors: [{out_table_obj.id}] {out_table_obj.alias})")

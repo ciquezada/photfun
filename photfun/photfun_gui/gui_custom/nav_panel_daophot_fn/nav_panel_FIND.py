@@ -108,7 +108,7 @@ def nav_panel_FIND_server(input, output, session, photfun_client, nav_table_side
         fits_obj = selected_fits()
         if fits_obj:
             try:
-                with ui.Progress(min=0, max=len(fits_obj.path)) as p:
+                with ui.Progress(min=0, max=1) as p:
                     pbar = daophot_pbar(p, "Find")
                     out_table_obj = photfun_client.find(fits_obj.id, pbar=pbar)
                 ui.notification_show(

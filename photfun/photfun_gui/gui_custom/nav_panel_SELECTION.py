@@ -129,15 +129,16 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
 
         start_time = time.time()
         cards = []
-        with ui.Progress(min=1, max=table_df.shape[0]) as p:
+        with ui.Progress(min=0, max=1) as p:
             p.set(message="Loading previews", detail="This may take a while...")
+            total = table_df.shape[0]
             for i, row in table_df.iterrows():
                 elapsed_time = time.time() - start_time
                 time_per_iter = elapsed_time / (i+1)
-                remaining_time = time_per_iter * (table_df.shape[0] - i)
+                remaining_time = time_per_iter * (total - i)
                 remaining_time_str = remaining_time_str = str(timedelta(seconds=int(remaining_time))) if i > 1 else "Estimating..."
 
-                p.set(i, message="Loading previews", detail=f"{remaining_time_str}")
+                p.inc(1/total, message="Loading previews", detail=f"{remaining_time_str}")
                 ####################
 
                 img_data = preview_functions["Source preview"](row, fits_image)
