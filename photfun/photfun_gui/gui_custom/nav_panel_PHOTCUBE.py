@@ -14,17 +14,29 @@ from ...misc_tools import cube_slicer, spectra_compile, daophot_pbar
 def nav_panel_PHOTCUBE_ui():
     return ui.page_fluid(
         ui.layout_column_wrap(
-            input_local_file_ui("load_slice_datacube", "Slice&Load DataCube"),
-            # input_local_file_ui("load_local_fits", "Load DataCube"),
+            [
+                ui.h4("Slice & Load Datacube"),
+                ui.div(
+                    input_local_file_ui("load_slice_datacube", "Search DataCube", width="auto"),
+                ),
+            ],
+            [
+                ui.h4("Spectra compiler"),
+                ui.div(
+                    ui.input_select("master_select", "Select MasterList", choices={}, width="auto"),
+                    ui.input_select("table_select", "Select Spectra Photometry", choices={}, width="auto"),
+                    output_save_location_ui("btn_export", "Compile Spectra"),
+                    style="padding-left: 20px; border-left: 1px solid #dee2e6;"
+                ),
+            ],
         ),
-        ui.h4("Spectra compiler"),
-        ui.div(
-            ui.input_select("master_select", "Select MasterList", choices={}, width="auto"),
-            ui.input_select("table_select", "Select Spectra Photometry", choices={}, width="auto"),
-            output_save_location_ui("btn_export", "Compile Spectra"),
-            style="padding-right: 20px; border-right: 1px solid #dee2e6;"
-        ),
+        
     )
+pip uninstall dist/photfun-0.1.2-py3-none-any.whl
+y
+python -m build
+pip install dist/photfun-0.1.2-py3-none-any.whl
+photfun
 
 @module.server
 def nav_panel_PHOTCUBE_server(input, output, session, photfun_client, samp_client, 
