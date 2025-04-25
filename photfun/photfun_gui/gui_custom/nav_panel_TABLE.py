@@ -43,10 +43,17 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
         archivos = input_load_local_table()
         if not archivos:
             return
+        print("PhotFun: Load")
+        carpetas = [f for f in archivos if os.path.isdir(f)]
         archivos_table = [f for f in archivos if os.path.isfile(f)]
-        for table in archivos_table:
-            photfun_client.add_table(table)
+        for carpeta in carpetas:
+            photfun_client.add_table(carpeta)
+        if len(archivos_table) > 1:
+            photfun_client.add_table(archivos_table)
+        elif len(archivos_table) == 1:
+            photfun_client.add_table(archivos_table[0])
         nav_table_sideview_update(fits=False, psf=False)
+
 
     # Obtener la tabla seleccionada en la lista general
     @reactive.Calc

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import imageio.v2 as imageio  # Asegura compatibilidad con versiones nuevas
 from io import BytesIO
@@ -105,7 +106,7 @@ def generate_prof(row, fits_image, n_jobs=1):
         return np.roll(line_values, shift)[25:125]
 
     # Procesamiento paralelo con ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+    with ThreadPoolExecutor(max_workers=os.cpu_count() if n_jobs==-1 else n_jobs) as executor:
         all_profiles = list(executor.map(process_angle, angles))
 
     # Configurar figura y graficar resultados
@@ -182,7 +183,7 @@ def generate_prof_fast(row, fits_image, n_jobs=1):
         return np.roll(line_values, shift)[25:125]
 
     # Procesamiento paralelo con ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+    with ThreadPoolExecutor(max_workers=os.cpu_count() if n_jobs==-1 else n_jobs) as executor:
         all_profiles = list(executor.map(process_angle, angles))
 
     # Configurar figura y graficar resultados
@@ -576,7 +577,7 @@ def generate_rotation_animation(row, fits_image, n_jobs=1):
 #     # Procesamiento paralelo de frames
 #     angles = list(np.linspace(0, 180, 30))
 #     # Procesamiento paralelo con ThreadPoolExecutor
-#     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+#     with ThreadPoolExecutor(max_workers=os.cpu_count() if n_jobs==-1 else n_jobs) as executor:
 #         frames = list(executor.map(generate_frame, angles))
 #         frames = sorted(frames, key=lambda x: x[1])
 #         frames = [fr[0] for fr in frames]

@@ -13,10 +13,10 @@ class PhotFile:
         if isinstance(path, list):  # Lista explícita de archivos
             self.path = path
         elif os.path.isdir(path):  # Es un directorio, obtenemos todos los archivos
-            self.path = [
+            self.path = sorted([
                 os.path.join(path, f) for f in os.listdir(path)
                 if os.path.isfile(os.path.join(path, f))
-            ]
+            ], key=lambda f: f.lower())
         elif os.path.isfile(path):  # Es un único archivo, lo convertimos en una lista
             self.path = [path]
         elif is_votable_url(path).endswith('.vot') or is_votable_url(path).endswith('.fits'): 

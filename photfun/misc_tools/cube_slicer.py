@@ -4,8 +4,13 @@ import os
 import sys
 import argparse
 import warnings
+import numpy as np
 from tqdm import tqdm
 from astropy.io import fits
+from astropy.wcs import WCS
+import nest_asyncio
+import asyncio
+
 
 def find_valid_hdu(fits_path):
     """Finds the first HDU in the FITS file that contains 3D data."""
@@ -15,7 +20,8 @@ def find_valid_hdu(fits_path):
                 return i  # Return the first valid HDU index
     raise ValueError(f"No valid 3D data found in {fits_path}")
 
-def cube_slicer(fits_path):
+def cube_slicer(fits_path, pbar=tqdm):
+    nest_asyncio.apply()
     """Loads a 3D FITS cube, extracts each slice, and saves them as individual files."""
 
     # Check if the file exists
@@ -30,6 +36,12 @@ def cube_slicer(fits_path):
     with fits.open(fits_path) as hdul:
         data = hdul[hdu_index].data
         header = hdul[hdu_index].header
+        # Get wavelength values from WCS
+        wcs = WCS(header, naxis=0)
+        num_slices = data.shape[0]
+        coords = np.zeros((num_slices, 3))
+        coords[:, 2] = np.arange(num_slices)
+        wavelengths = wcs.all_pix2world(coords, 2)[:, 2]*1e10
 
     # Ensure the FITS file is a 3D cube
     if data.ndim != 3:
@@ -41,18 +53,25 @@ def cube_slicer(fits_path):
     output_dir = os.path.join(os.path.dirname(fits_path), f"{base_name}_slices")
     os.makedirs(output_dir, exist_ok=True)
 
-    # Save each slice as a separate FITS file
-    num_slices = data.shape[0]  # Spectral axis is the first dimension
-    for i in tqdm(range(num_slices), desc="Slicing Cube", unit="slice"):
-        slice_data = data[i, :, :]
-        slice_header = header.copy()
-        slice_header["SLICE"] = i
+    # num_slices = data.shape[0]  # Spectral axis is the first dimension
 
-        slice_filename = os.path.join(output_dir, f"{base_name}_slice_{i:04d}.fits")
+    # Save each slice as a separate FITS file using wavelength
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        for i in pbar(range(data.shape[0])):
+            slice_data = data[i, :, :]
+            slice_header = header.copy()
+            slice_header["SLICE"] = i
+            wavelength = wavelengths[i]
+            wavelength_str = f"{wavelength:.5f}".replace('.', 'p')
 
-        # Save the slice
-        fits.writeto(slice_filename, slice_data, slice_header, overwrite=True)
+            slice_filename = os.path.join(output_dir, f"{base_name}_slice_{wavelength_str}.fits")
 
+            # Save the slice
+            fits.writeto(slice_filename, slice_data, slice_header, overwrite=True)
+    finally:
+        loop.close()
     return output_dir
 
 def main():

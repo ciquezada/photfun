@@ -136,7 +136,7 @@ def nav_panel_PHOT_server(input, output, session, photfun_client, nav_table_side
         table_obj = selected_table()
         if fits_obj and table_obj:
             try:
-                with ui.Progress(min=0, max=max(len(fits_obj.path), len(table_obj.path))) as p:
+                with ui.Progress(min=0, max=1) as p:
                     pbar = daophot_pbar(p, "Phot")
                     out_table_obj = photfun_client.phot(fits_obj.id, table_obj.id, pbar=pbar)
                 ui.notification_show(f"Aperture photometry\n -> [{out_table_obj.id}] {out_table_obj.alias}")

@@ -19,9 +19,9 @@ ROOT_PATH = os.getcwd()
 
 
 @module.ui
-def input_local_file_ui(label="Load File"):
+def input_local_file_ui(label="Load File", width="100%"):
     return ui.page_fluid(
-        ui.input_action_button("button_open", label, width="100%"),
+        ui.input_action_button("button_open", label, width=width),
         # ui.tags.head(ui.tags.style("""
         #     .modal-dialog { 
         #         width: flex;

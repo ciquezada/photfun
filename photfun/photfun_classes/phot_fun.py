@@ -419,8 +419,16 @@ class PhotFun:
     def export_file(self, obj_id, output_dir):
         objs = self.fits_files + self.tables + self.psf_files
         out_obj = next(filter(lambda f: f.id==obj_id, objs), None)
-        out_paths = [os.path.join(output_dir, os.path.basename(p)) for p in out_obj.path]
-        for og_path, out_path in zip(out_obj.path, out_paths):
+        out_paths = [
+            os.path.join(output_dir, os.path.basename(p)) 
+                for p in out_obj.path 
+                    if not os.path.basename(p).startswith("ERROR.")
+        ]
+        og_paths = [
+                p for p in out_obj.path 
+                    if not os.path.basename(p).startswith("ERROR.")
+                ]
+        for og_path, out_path in zip(og_paths, out_paths):
             out_path = copy_file_noreplace(og_path, out_path)
             print(f"export: {os.path.basename(og_path)}\n -> {out_path}")
 

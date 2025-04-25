@@ -77,7 +77,7 @@ def nav_panel_SUB_server(input, output, session, photfun_client, nav_table_sidev
         lst_obj = selected_lst_table()
         if fits_obj and psf_obj and nei_obj:
             try:
-                with ui.Progress(min=0, max=max(len(fits_obj.path), len(nei_obj.path))) as p:
+                with ui.Progress(min=0, max=1) as p:
                     pbar = daophot_pbar(p, "Subtract")
                     out_fits_obj = photfun_client.sub(fits_obj.id, psf_obj.id, nei_obj.id, 
                                             lst_obj.id if lst_obj else False, pbar=pbar)

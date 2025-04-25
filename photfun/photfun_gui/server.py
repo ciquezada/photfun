@@ -13,8 +13,8 @@ from ..misc_tools import move_file_noreplace
 from ..photfun_classes import PhotFun
 from .gui_custom import (nav_table_sideview_server, nav_panel_IMAGE_server, 
                                             nav_panel_TABLE_server, nav_panel_DAOPHOT_server, 
-                                            nav_panel_SELECTION_server, nav_panel_EXPORT_server,
-                                            nav_panel_LOGS_server, SAMPclient)
+                                            nav_panel_SELECTION_server, nav_panel_PHOTCUBE_server,
+                                            nav_panel_EXPORT_server, nav_panel_LOGS_server, SAMPclient)
 
 app_dir = Path(__file__).parent
 
@@ -30,6 +30,7 @@ def server(input, output, session):
     _ = nav_panel_TABLE_server("nav_panel_TABLE", photfun_client, samp_client, nav_table_sideview_update, tables_df)
     _ = nav_panel_DAOPHOT_server("nav_panel_DAOPHOT", photfun_client, nav_table_sideview_update, fits_df, tables_df, input.tabs_main)
     _ = nav_panel_SELECTION_server("nav_panel_SELECTION", photfun_client, nav_table_sideview_update, fits_df, tables_df)
+    _ = nav_panel_PHOTCUBE_server("nav_panel_PHOTCUBE", photfun_client, samp_client, nav_table_sideview_update, input.tabs_main)
     _ = nav_panel_EXPORT_server("nav_panel_EXPORT", photfun_client, input.tabs_main)
     _ = nav_panel_LOGS_server("nav_panel_LOGS", photfun_client)
 
