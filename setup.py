@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='photfun',
-    version='0.1.3.fix1',
+    version='0.1.3.1',
     packages=find_packages(),
     install_requires=[
         "astropy==7.0.1",
