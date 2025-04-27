@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: docker
+      url: https://hub.docker.com/repository/docker/ciquezada/photfun
 
     steps:
       - name: Checkout repository
