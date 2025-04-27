@@ -24,7 +24,7 @@ FROM python:3.11-slim
 WORKDIR /opt/daophot
 
 # Copiar todo el contenido del proyecto al contenedor
-COPY ./photfun/daophot_wrap/daophot /opt/daophot
+COPY . /opt/daophot
 RUN cp /opt/daophot/lib/libgfortran.so.3 /usr/local/lib/.
 
 # # Actualizar pip
