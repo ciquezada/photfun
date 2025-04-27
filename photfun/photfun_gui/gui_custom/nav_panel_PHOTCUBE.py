@@ -32,11 +32,6 @@ def nav_panel_PHOTCUBE_ui():
         ),
         
     )
-pip uninstall dist/photfun-0.1.2-py3-none-any.whl
-y
-python -m build
-pip install dist/photfun-0.1.2-py3-none-any.whl
-photfun
 
 @module.server
 def nav_panel_PHOTCUBE_server(input, output, session, photfun_client, samp_client, 
