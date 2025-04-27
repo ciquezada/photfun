@@ -11,26 +11,85 @@ In crowded stellar fields, PHOTcube enables efficient and accurate spectral extr
 - **PHOTcube** extension for IFU datacube slicing and spectral extraction.
 - Visual inspection and rejection of PSF stars via GUI.
 - Interoperability with external tools like TOPCAT and DS9 through SAMP.
-
-## Credits
-- **Developer:** Carlos Quezada
-- Inspired by the work of Alvaro Valenzuela
-- Built upon DAOPHOT-II and ALLSTAR by Peter Stetson
+- Available as a standalone Docker container for easy setup.
 
 ## Installation
-1. Clone this repository.
-2. Make sure the dependencies listed in `setup.py` are installed.
-3. Install the package:
-   ```bash
-   pip install .
-   ```
-4. Run the GUI using the command:
-   ```bash
-   photfun
-   ```
+
+### Option 1: Native Installation (Requires DAOPHOT Installed Separately)
+
+PHOTfun can be installed directly from PyPI:
+
+```bash
+pip install photfun
+```
+
+**Note:** You must have DAOPHOT-II, and their dependencies installed and available on your system path for full functionality.
+
+### Option 2: Using Docker (Recommended for Standalone Usage)
+
+We provide a pre-built Docker image that includes PHOTfun, DAOPHOT-II, and all necessary dependencies:
+- Docker Image: `ciquezada/photfun-daophot_wrapper`
+
+Only Docker installation is required on your system. Once Docker is installed, the container will automatically handle everything else.
+
+**Quick Start (after installing Docker):**
+
+```bash
+photfun
+```
+
+Then open your browser and navigate to `http://localhost:8000` to start using PHOTfun.
+
+#### Docker Installation Instructions by OS
+
+**Ubuntu / Debian:**
+
+```bash
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+**Fedora:**
+
+```bash
+sudo dnf install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+**macOS (using Homebrew):**
+
+```bash
+brew install --cask docker
+```
+Then open Docker.app from your Applications.
+
+**Windows:**
+- Download Docker Desktop from [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/) and install it following the installer prompts.
+
+---
+
+## Usage Instructions
+
+### PHOTfun GUI (Photometry)
+1. Run `photfun` from the command line.
+2. Select a `.fits` file or set of images to process.
+3. Use the interface to execute FIND, PICK, PHOT, PSF modeling, and photometry steps.
+4. Interactively inspect PSF stars and reject outliers.
+
+### PHOTcube (IFU Spectra Extraction)
+1. Load a datacube in PHOTfun.
+2. Automatically slice the datacube into monochromatic images.
+3. Apply PSF photometry on each slice using previously defined source lists.
+4. Extract and concatenate monochromatic fluxes into 1D spectra for each target.
+
+---
 
 ## Dependencies
-The package depends on the following libraries:
+
+If installed natively (without Docker), PHOTfun depends on:
 - `astropy==7.0.1`
 - `faicons==0.2.2`
 - `imageio==2.37.0`
@@ -44,35 +103,34 @@ The package depends on the following libraries:
 - `shiny==1.4.0`
 - `tqdm==4.67.1`
 
-## Usage Instructions
-### PHOTfun GUI (Photometry)
-1. Run `photfun` from the command line.
-2. Select a `.fits` file or set of images to process.
-3. Use the interface to execute FIND, PICK, PHOT, PSF modeling, and photometry steps.
-4. Interactively inspect PSF stars and reject outliers.
+(These are already pre-installed in the Docker image.)
 
-### PHOTcube (IFU Spectra Extraction)
-1. Load a datacube in PHOTfun.
-2. Automatically slice the datacube into monochromatic images.
-3. Apply PSF photometry on each slice using previously defined source lists.
-4. Extract and concatenate monochromatic fluxes into 1D spectra for each target.
+---
 
-## Contributions
-Contributions are welcome! To contribute:
-1. Fork the repository.
-2. Create a new branch:
-   ```bash
-   git checkout -b feature/my-feature
-   ```
-3. Make your changes and commit them:
-   ```bash
-   git commit -am 'Add my feature'
-   ```
-4. Push to your branch:
-   ```bash
-   git push origin feature/my-feature
-   ```
-5. Open a pull request.
+### Using DAOPHOT manually inside the Docker container
+
+You can also open a bash terminal inside the container to run DAOPHOT manually:
+
+```bash
+docker run -it ciquezada/photfun-daophot_wrapper /bin/bash
+```
+
+Once inside, you can run `daophot`, `allstar`, and other tools directly:
+
+```bash
+daophot
+```
+
+This allows you to use DAOPHOT/ALLSTAR independently from the GUI if needed.
+
+---
+
+## Credits
+- **Developer:** Carlos Quezada
+- Inspired by the work of Alvaro Valenzuela
+- Built upon DAOPHOT-II and ALLSTAR by Peter Stetson
+
+---
 
 ## License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
@@ -92,40 +150,65 @@ PHOTcube permite realizar una fotometría por PSF sobre imágenes monocromática
 - Herramienta visual para inspección y rechazo de estrellas PSF.
 - Soporte SAMP para interoperabilidad con herramientas como TOPCAT y DS9.
 - **PHOTcube** para corte del cubo IFU y extracción espectral automatizada.
-
-## Créditos
-- **Desarrollador:** Carlos Quezada
-- Inspirado en el trabajo de Alvaro Valenzuela
-- Basado en DAOPHOT-II y ALLSTAR, software de Peter Stetson
+- Opción de ejecución standalone vía Docker.
 
 ## Instalación
-1. Clona este repositorio.
-2. Asegúrate de tener las dependencias de `setup.py` instaladas.
-3. Instala el paquete con:
-   ```bash
-   pip install .
-   ```
-4. Ejecuta la interfaz con:
-   ```bash
-   photfun
-   ```
 
-## Dependencias
-El paquete requiere las siguientes librerías:
-- `astropy==7.0.1`
-- `faicons==0.2.2`
-- `imageio==2.37.0`
-- `joblib==1.4.2`
-- `matplotlib==3.10.1`
-- `nest_asyncio==1.6.0`
-- `numpy==2.2.5`
-- `pandas==2.2.3`
-- `Pillow==11.2.1`
-- `scipy==1.15.2`
-- `shiny==1.4.0`
-- `tqdm==4.67.1`
+### Opción 1: Instalación Nativa (requiere DAOPHOT instalado previamente)
+
+Instala directamente desde PyPI:
+
+```bash
+pip install photfun
+```
+
+**Nota:** Necesitas tener DAOPHOT-II, ALLSTAR y sus dependencias ya instaladas en tu sistema.
+
+### Opción 2: Uso de Docker (Recomendado para facilitar la instalación)
+
+Usa el contenedor Docker `ciquezada/photfun-daophot_wrapper`, que incluye PHOTfun, DAOPHOT-II y todas las dependencias necesarias.
+
+**Inicio rápido (tras instalar Docker):**
+
+```bash
+photfun
+```
+
+Luego abre tu navegador en `http://localhost:8000`.
+
+#### Instrucciones para instalar Docker según el sistema operativo
+
+**Ubuntu / Debian:**
+
+```bash
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+**Fedora:**
+
+```bash
+sudo dnf install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+```
+
+**macOS (Homebrew):**
+
+```bash
+brew install --cask docker
+```
+Luego ejecuta Docker.app desde Aplicaciones.
+
+**Windows:**
+- Descarga Docker Desktop desde [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/) y sigue las instrucciones.
+
+---
 
 ## Instrucciones de uso
+
 ### Interfaz PHOTfun (Fotometría)
 1. Ejecuta `photfun` desde la terminal.
 2. Selecciona archivos `.fits` o conjuntos de imágenes para procesar.
@@ -138,23 +221,33 @@ El paquete requiere las siguientes librerías:
 3. Aplica fotometría PSF usando listas maestras de fuentes.
 4. Los flujos monocromáticos se concatenan para formar los espectros de cada estrella.
 
-## Contribuciones
-¡Las contribuciones son bienvenidas! Para contribuir:
-1. Haz un fork del repositorio.
-2. Crea una nueva rama:
-   ```bash
-   git checkout -b feature/nueva-funcionalidad
-   ```
-3. Realiza tus cambios y haz commit:
-   ```bash
-   git commit -am 'Agrega nueva funcionalidad'
-   ```
-4. Haz push de tu rama:
-   ```bash
-   git push origin feature/nueva-funcionalidad
-   ```
-5. Abre un pull request.
+---
+
+### Uso de DAOPHOT manualmente dentro del contenedor Docker
+
+También puedes abrir una terminal bash dentro del contenedor para ejecutar DAOPHOT manualmente:
+
+```bash
+docker run -it ciquezada/photfun-daophot_wrapper /bin/bash
+```
+
+Una vez dentro, puedes ejecutar `daophot`, `allstar` y otras herramientas directamente:
+
+```bash
+daophot
+```
+
+Esto te permite utilizar DAOPHOT/ALLSTAR de manera independiente de la interfaz gráfica (GUI) si lo necesitas.
+
+---
+
+## Créditos
+- **Desarrollador:** Carlos Quezada
+- Inspirado en el trabajo de Alvaro Valenzuela
+- Basado en DAOPHOT-II y ALLSTAR, software de Peter Stetson
+
+---
+
 
 ## Licencia
 Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
-
