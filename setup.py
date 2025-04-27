@@ -21,7 +21,9 @@ setup(
         "scipy==1.15.2",
         "shiny==1.4.0",
         "tqdm==4.67.1",
+        "docker"
     ],
+    
     python_requires='>=3.11',
     entry_points={
         'console_scripts': [
