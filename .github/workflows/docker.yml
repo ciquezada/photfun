@@ -38,4 +38,4 @@ jobs:
         with:
           context: ./photfun/daophot_wrap/daophot
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/photfun-docker_wrapper:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/photfun-daophot_wrapper:latest
