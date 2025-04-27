@@ -1,0 +1,53 @@
+F77 = f77
+FFLAGS = -c -O3 -xtarget=ultra2 -xcache=16/32/1:4096/64/1
+LFLAGS = -O3 -xtarget=ultra2 -xcache=16/32/1:4096/64/1
+HOSTLIBS = -lF77 -lm -lsocket -lnsl -lintl -ldl -lelf -lsunmath -lm_mt
+IMFORT =  /usr/local/iraf/irafbin/bin.ssun/libimfort.a \
+          /usr/local/iraf/irafbin/bin.ssun/libsys.a \
+          /usr/local/iraf/irafbin/bin.ssun/libvops.a \
+          /usr/local/iraf/iraf2.10.4/unix/bin.ssol/libos.a
+FITLIB = /home/unix/2/stetson/code/fits/libcfitsio.a
+
+# RULES:
+.SUFFIXES: .o .f
+.f.o:
+	$(F77) $(FFLAGS) $<
+
+daophot: daophot.o pckpsf.o find.o fotometry.o \
+        psf.o peak.o nstar.o fudge.o addstar.o substar.o \
+        group.o sort.o unxsubs.o bothsubs.o iosubs.o mathsubs.o
+	$(F77) $(LFLAGS) -o daophot daophot.o pckpsf.o find.o fotometry.o \
+        psf.o peak.o nstar.o fudge.o addstar.o substar.o \
+        group.o sort.o unxsubs.o bothsubs.o \
+	iosubs.o mathsubs.o \
+        $(IMFORT) $(HOSTLIBS) $(FITLIB)
+
+allstar: allstar.o allstsubs.o unxsubs.o \
+	iosubs.o mathsubs.o bothsubs.o
+	$(F77) $(LFLAGS) -o allstar allstar.o allstsubs.o \
+	unxsubs.o iosubs.o mathsubs.o bothsubs.o \
+	$(IMFORT) $(HOSTLIBS) $(FITLIB)
+
+daomaster: daomaster.o iosubs.o mathsubs.o unxsubs.o dummysm.o
+	$(F77) $(LFLAGS) -o daomaster daomaster.o iosubs.o mathsubs.o unxsubs.o dummysm.o
+
+daomatch: daomatch.o iosubs.o mathsubs.o unxsubs.o
+	$(F77) $(LFLAGS) -o daomatch daomatch.o iosubs.o mathsubs.o unxsubs.o
+
+montage2: montage2.o mathsubs.o iosubs.o unxsubs.o bothsubs.o
+	$(F77) $(LFLAGS) -o montage2 montage2.o mathsubs.o iosubs.o unxsubs.o bothsubs.o \
+        $(HOSTLIBS) $(IMFORT) $(FITLIB)
+
+allframe: allframe.o bothsubs.o unxsubs.o iosubs.o mathsubs.o
+	$(F77) $(LFLAGS) -o allframe allframe.o bothsubs.o \
+	unxsubs.o iosubs.o mathsubs.o \
+        $(IMFORT) $(HOSTLIBS) $(FITLIB)
+
+daogrow: daogrow.o iosubs.o mathsubs.o unxsubs.o
+	$(F77) $(LFLAGS) -o daogrow daogrow.o iosubs.o mathsubs.o unxsubs.o
+
+daospec: daospec.o unxsubs.o iosubs.o mathsubs.o bothsubs.o
+        $(F77) $(LFLAGS) -o daospec daospec.o unxsubs.o iosubs.o mathsubs.o bothsubs.o \
+        $(IMFORT) $(HOSTLIBS) $(FITLIB) \
+        -Bstatic -L/usr/local/misc/sm/lib -lplotsub -ldevices -lutils -Bdynamic -lX11
+
