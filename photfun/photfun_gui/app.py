@@ -84,7 +84,7 @@ app_ui = ui.page_fillable(
 app = App(app_ui, server)
 
 def run_photfun():
-    app.run()
+    app.run(host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
     app.run()
