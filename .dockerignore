@@ -1,0 +1,13 @@
+.git
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.tar.gz
+dist/
+build/
+.env
+*.fits
+*.csv
+*.png
