@@ -2,10 +2,11 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from subprocess import Popen, PIPE
+from .docker_handler import run_proc
 
 
-def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True) -> [".ap"]:
+def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True, 
+                	runner=run_proc) -> [".ap"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -47,11 +48,7 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True) -> [".ap"]
 
         
         # Ejecutar en la carpeta temporal
-        process = Popen(cmd, shell=True, cwd=temp_dir, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = process.communicate()
-        
-        if process.returncode != 0:
-            raise RuntimeError(f"DAOPHOT error:\n{stderr.decode()}")
+        runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final
         final_out_ap = move_file_noreplace(temp_ap, out_ap)

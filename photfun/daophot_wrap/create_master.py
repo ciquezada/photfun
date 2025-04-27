@@ -2,7 +2,6 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from subprocess import Popen, PIPE
 from astropy.io import ascii
 import pandas as pd
 import numpy as np

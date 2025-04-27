@@ -2,11 +2,12 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from subprocess import Popen, PIPE
+from .docker_handler import run_proc
 
 
 def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
-                out_als, out_fits, RE=True, verbose=True) -> [".als", ".fits"]:
+                out_als, out_fits, RE=True, verbose=True, 
+                	runner=run_proc) -> [".als", ".fits"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -48,13 +49,8 @@ def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
                     'exit', "EOF"]
         cmd = '\n'.join(cmd_list)
 
-        
         # Ejecutar en la carpeta temporal
-        process = Popen(cmd, shell=True, cwd=temp_dir, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = process.communicate()
-        
-        if process.returncode != 0:
-            raise RuntimeError(f"DAOPHOT error:\n{stderr.decode()}")
+        runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final
         final_out_als = move_file_noreplace(temp_out_als, out_als)

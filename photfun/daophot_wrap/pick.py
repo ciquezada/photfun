@@ -2,10 +2,12 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from subprocess import Popen, PIPE
+from .docker_handler import run_proc
 
 
-def pick(in_fits, in_ap, in_daophot, out_lst, stars_minmag="200,20", verbose=True) -> [".lst"]:
+def pick(in_fits, in_ap, in_daophot, out_lst, 
+			stars_minmag="200,20", verbose=True, 
+                	runner=run_proc) -> [".lst"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -39,11 +41,7 @@ def pick(in_fits, in_ap, in_daophot, out_lst, stars_minmag="200,20", verbose=Tru
 
         
         # Ejecutar en la carpeta temporal
-        process = Popen(cmd, shell=True, cwd=temp_dir, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = process.communicate()
-        
-        if process.returncode != 0:
-            raise RuntimeError(f"DAOPHOT error:\n{stderr.decode()}")
+        runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final
         final_out_lst = move_file_noreplace(temp_lst, out_lst)

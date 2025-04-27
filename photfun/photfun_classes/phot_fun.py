@@ -6,6 +6,7 @@ from itertools import count
 from .phot_table import PhotTable
 from .phot_fits import PhotFits
 from .phot_psf import PhotPSF
+from ..daophot_wrap.docker_handler import init_docker
 from ..daophot_wrap import (find, phot, pick, create_psf, 
                         sub_fits, allstar, daomatch, 
                         create_master)
@@ -15,6 +16,7 @@ import numpy as np
 from joblib import Parallel, delayed, parallel_backend
 import nest_asyncio
 import asyncio
+
 
 nest_asyncio.apply()
 
@@ -70,6 +72,7 @@ def delayed_wrap(func):
             return error_output
     return delayed(error_handler_wrap)
 
+
 class PhotFun:
     def __init__(self):
         self.n_jobs = -1
@@ -105,6 +108,9 @@ class PhotFun:
         # Parametros de allstar
         self.allstar_recentering = True
 
+        # intiaite Docker (if it can)
+        self.docker_run = init_docker()
+
     def add_table(self, path, *args, **kwargs):
         table = PhotTable(path, *args, **kwargs)
         table.id = next(self._id_counter)
@@ -139,6 +145,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.coo')}"),
                     f"{int(self.find_sum)},{int(self.find_average)}",
                     True if len(fits_obj.path)<4 else False, # verbose=False
+                    self.docker_run,
                     )  
                     for fits_path in fits_obj.path
                 ]
@@ -176,6 +183,7 @@ class PhotFun:
                     os.path.join(self.working_dir, 'photo.opt'),
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.ap')}"),
                     True if len(input_args)<4 else False, # verbose=False
+                    self.docker_run,
                     )  
                     for fits_path, coo_path in input_args
                 ]
@@ -212,6 +220,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.lst')}"),
                     f"{int(self.pick_max_stars)},{int(self.pick_min_mag)}",
                     True if len(input_args)<4 else False, # verbose=False
+                    self.docker_run,
                     )  
                     for fits_path, ap_path in input_args
                 ]
@@ -253,6 +262,7 @@ class PhotFun:
                     os.path.join(output_dir, f"{os.path.basename(fits_path).replace('.fits', '.psf')}"),
                     os.path.join(output_dir, f"{os.path.basename(fits_path).replace('.fits', '.nei')}"),
                     True if len(input_args)<4 else False, # verbose=False
+                    self.docker_run,
                     )  
                     for fits_path, ap_path, lst_path in input_args
                 ]
@@ -303,6 +313,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.splitext(os.path.basename(fits_path))[0]}_sub.fits"),
                     lst_path,
                     True if len(input_args)<4 else False, # verbose=False
+                    self.docker_run,
                     )  
                     for fits_path, psf_path, nei_path, lst_path in input_args
                 ]
@@ -347,6 +358,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.splitext(os.path.basename(fits_path))[0]}_als_sub.fits"),
                     self.allstar_recentering,
                     True if len(input_args)<4 else False, # verbose=False
+                    self.docker_run,
                     )  
                     for fits_path, psf_path, ap_path in input_args
                 ]
@@ -380,7 +392,8 @@ class PhotFun:
 
         output_dir = self.working_dir
         out_mch = os.path.join(output_dir, f"{table_name}_{table_list_name}.mch")
-        final_out_mch = daomatch(table_obj.path[0], table_list_obj.path, out_mch)
+        final_out_mch = daomatch(table_obj.path[0], table_list_obj.path, 
+        							out_mch, self.docker_run)
         out_mch_table = self.add_table(final_out_mch)
         return out_mch_table
 
@@ -393,7 +406,8 @@ class PhotFun:
             raise ValueError(f"No se encontró la tabla con ID {mch_obj}")
         
         output_dir = self.working_dir
-        final_out_path_list = create_master(master_obj.path[0], mch_obj.path[0], output_dir)
+        final_out_path_list = create_master(master_obj.path[0], mch_obj.path[0], 
+        						output_dir)
         out_obj_table = self.add_table(final_out_path_list)
         return out_obj_table
 
