@@ -46,11 +46,12 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True,
                         'exit', 'EOF']
         cmd = '\n'.join(cmd_list)
 
-        
+              
         # Ejecutar en la carpeta temporal
         if use_docker:
             runner = docker_run
-            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daophot >> phot.log'"
+            joined_cmds = '\n'.join(cmd_list[1:])
+            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
         else:
             runner = run_proc
             cmd = cmd

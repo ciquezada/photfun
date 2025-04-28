@@ -53,11 +53,12 @@ def sub_fits(in_fits, in_psf, in_sub, in_daophot,
                     out_filename, 
                     'exit', 'EOF']
         cmd = '\n'.join(cmd_list)
-
+       
         # Ejecutar en la carpeta temporal
         if use_docker:
             runner = docker_run
-            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daophot >> sub.log'"
+            joined_cmds = '\n'.join(cmd_list[1:])
+            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
         else:
             runner = run_proc
             cmd = cmd
