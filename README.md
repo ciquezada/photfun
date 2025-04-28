@@ -104,7 +104,6 @@ If installed PHOTfun depends on:
 - `tqdm==4.67.1`
 - `docker`
 
-(These are already pre-installed in the Docker image.)
 
 ---
 
