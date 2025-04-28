@@ -26,8 +26,18 @@ def nav_panel_DAOPHOT_ui():
             ui.layout_columns(
                 ui.page_fillable(
                     ui.div(
-                        ui.h4("FITS Preview"),
+                        ui.h4("Loaded Data", class_="d-inline"),
+                        ui.div(
+                            ui.input_action_button(
+                                "reconnect_docker",
+                                "Reconnect Docker",
+                                icon=icon_svg("plug"),
+                                class_="btn-sm btn-outline-primary float-end"
+                            ),
+                            class_="d-inline-block float-end"
+                        ),
                         ui.output_plot("plot_fits"),
+                        
 
                     )
                 ),
@@ -117,3 +127,10 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
         
         fig.tight_layout()
         return fig
+    
+    # SAMP reconnect
+    @reactive.Effect
+    @reactive.event(input.reconnect_docker)
+    def init_docker():
+        photfun_client.reconnect_docker()
+        return 1

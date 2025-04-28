@@ -2,11 +2,11 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from .docker_handler import run_proc
+from .docker_handler import run_proc, docker_run
 
 
 def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True, 
-                	runner=run_proc) -> [".coo"]: 
+                	use_docker=None) -> [".coo"]: 
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -37,6 +37,12 @@ def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True,
 
         
         # Ejecutar en la carpeta temporal
+        if use_docker:
+            runner = docker_run
+            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daophot >> find.log'"
+        else:
+            runner = run_proc
+            cmd = cmd
         runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final

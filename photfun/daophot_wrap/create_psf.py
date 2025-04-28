@@ -2,12 +2,12 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from .docker_handler import run_proc
+from .docker_handler import run_proc, docker_run
 
 
 def create_psf(in_fits, in_ap, in_lst, in_daophot, 
 				out_psf, out_nei, verbose=True, 
-                	runner=run_proc) -> [".psf", ".nei"]:
+                	use_docker=run_proc) -> [".psf", ".nei"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -48,6 +48,12 @@ def create_psf(in_fits, in_ap, in_lst, in_daophot,
         cmd = '\n'.join(cmd_list)
         
         # Ejecutar en la carpeta temporal
+        if use_docker:
+            runner = docker_run
+            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daophot >> psf.log'"
+        else:
+            runner = run_proc
+            cmd = cmd
         runner(cmd, temp_dir)
 
         check_file(temp_nei, "nei not created: ")

@@ -13,7 +13,7 @@ def run_proc(cmd, workdir):
 def init_docker():
     if not HAS_DOCKER:
         print(f"[PhotFun] Docker not available. Running locally.\n -> Import error")
-        return run_proc
+        return False
     try:
         docker_client = docker.from_env()
         docker_client.ping()  # Verifica si el daemon responde
@@ -29,27 +29,27 @@ def init_docker():
 
     except Exception as e:
         print(f"[PhotFun] Docker not available. Running locally.\n -> {e}")
-        return run_proc
+        return False
+    return True
 
-    def docker_run(temp_dir, cmd):
-        # Ejecutar contenedor
-        container = docker_client.containers.run(
-            image="ciquezada/photfun-daophot_wrapper",
-            command="/bin/bash",
-            volumes={temp_dir: {
-                	'bind': "/workdir", 
-            		'mode': 'rw'}
-            },
-            working_dir="/workdir",
-            tty=True,
-            detach=True
-        )
-        try:
-            exec_res = container.exec_run(cmd=cmd, workdir="/workdir", shell=True)
-            if exec_res.exit_code != 0:
-                raise RuntimeError(f"DAOPHOT error:\n{stderr.decode()}")
-        finally:
-            container.stop()
-            container.remove()
-
-    return docker_run
+def docker_run(cmd, workdir):
+    # Ejecutar contenedor
+    docker_client = docker.from_env()
+    container = docker_client.containers.run(
+        image="ciquezada/photfun-daophot_wrapper",
+        command="/bin/bash",
+        volumes={workdir: {
+            	'bind': "/workdir", 
+          		'mode': 'rw'}
+           },
+        working_dir="/workdir",
+        tty=True,
+        detach=True
+    )
+    try:
+        exec_res = container.exec_run(cmd=cmd)
+        if exec_res.exit_code != 0:
+            raise RuntimeError(f"DAOPHOT error:\n{exec_res.exit_code}")
+    finally:
+        container.stop()
+        container.remove()

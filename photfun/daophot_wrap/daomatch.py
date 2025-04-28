@@ -2,11 +2,11 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from .docker_handler import run_proc
+from .docker_handler import run_proc, docker_run
 
 
 def daomatch(in_master_als, in_path_list, out_mch, verbose=True, 
-                	runner=run_proc) -> [".mch"]: 
+                	use_docker=run_proc) -> [".mch"]: 
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_master_als))[0]
@@ -40,6 +40,12 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
 
         
         # Ejecutar en la carpeta temporal
+        if use_docker:
+            runner = docker_run
+            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daomatch >> daomatch.log'"
+        else:
+            runner = run_proc
+            cmd = cmd
         runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final

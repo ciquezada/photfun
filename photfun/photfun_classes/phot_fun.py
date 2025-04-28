@@ -109,7 +109,11 @@ class PhotFun:
         self.allstar_recentering = True
 
         # intiaite Docker (if it can)
-        self.docker_run = init_docker()
+        self._docker_run = init_docker()
+
+    def reconnect_docker(self):
+        # intiaite Docker (if it can)
+        self._docker_run = init_docker()
 
     def add_table(self, path, *args, **kwargs):
         table = PhotTable(path, *args, **kwargs)
@@ -145,7 +149,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.coo')}"),
                     f"{int(self.find_sum)},{int(self.find_average)}",
                     True if len(fits_obj.path)<4 else False, # verbose=False
-                    self.docker_run,
+                    self._docker_run,
                     )  
                     for fits_path in fits_obj.path
                 ]
@@ -183,7 +187,7 @@ class PhotFun:
                     os.path.join(self.working_dir, 'photo.opt'),
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.ap')}"),
                     True if len(input_args)<4 else False, # verbose=False
-                    self.docker_run,
+                    self._docker_run,
                     )  
                     for fits_path, coo_path in input_args
                 ]
@@ -220,7 +224,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.lst')}"),
                     f"{int(self.pick_max_stars)},{int(self.pick_min_mag)}",
                     True if len(input_args)<4 else False, # verbose=False
-                    self.docker_run,
+                    self._docker_run,
                     )  
                     for fits_path, ap_path in input_args
                 ]
@@ -262,7 +266,7 @@ class PhotFun:
                     os.path.join(output_dir, f"{os.path.basename(fits_path).replace('.fits', '.psf')}"),
                     os.path.join(output_dir, f"{os.path.basename(fits_path).replace('.fits', '.nei')}"),
                     True if len(input_args)<4 else False, # verbose=False
-                    self.docker_run,
+                    self._docker_run,
                     )  
                     for fits_path, ap_path, lst_path in input_args
                 ]
@@ -313,7 +317,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.splitext(os.path.basename(fits_path))[0]}_sub.fits"),
                     lst_path,
                     True if len(input_args)<4 else False, # verbose=False
-                    self.docker_run,
+                    self._docker_run,
                     )  
                     for fits_path, psf_path, nei_path, lst_path in input_args
                 ]
@@ -358,7 +362,7 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.splitext(os.path.basename(fits_path))[0]}_als_sub.fits"),
                     self.allstar_recentering,
                     True if len(input_args)<4 else False, # verbose=False
-                    self.docker_run,
+                    self._docker_run,
                     )  
                     for fits_path, psf_path, ap_path in input_args
                 ]
@@ -393,7 +397,7 @@ class PhotFun:
         output_dir = self.working_dir
         out_mch = os.path.join(output_dir, f"{table_name}_{table_list_name}.mch")
         final_out_mch = daomatch(table_obj.path[0], table_list_obj.path, 
-        							out_mch, self.docker_run)
+        							out_mch, self._docker_run)
         out_mch_table = self.add_table(final_out_mch)
         return out_mch_table
 

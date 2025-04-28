@@ -2,11 +2,11 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from .docker_handler import run_proc
+from .docker_handler import run_proc, docker_run
 
 
 def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True, 
-                	runner=run_proc) -> [".ap"]:
+                	use_docker=run_proc) -> [".ap"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -48,6 +48,12 @@ def phot(in_fits, in_coo, in_daophot, in_photo, out_ap, verbose=True,
 
         
         # Ejecutar en la carpeta temporal
+        if use_docker:
+            runner = docker_run
+            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daophot >> phot.log'"
+        else:
+            runner = run_proc
+            cmd = cmd
         runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final

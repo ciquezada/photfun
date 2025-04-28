@@ -2,12 +2,12 @@ from ..misc_tools import check_file, temp_mkdir, move_file_noreplace
 import os
 import tempfile
 import shutil
-from .docker_handler import run_proc
+from .docker_handler import run_proc, docker_run
 
 
 def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
                 out_als, out_fits, RE=True, verbose=True, 
-                	runner=run_proc) -> [".als", ".fits"]:
+                	use_docker=run_proc) -> [".als", ".fits"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -50,6 +50,12 @@ def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
         cmd = '\n'.join(cmd_list)
 
         # Ejecutar en la carpeta temporal
+        if use_docker:
+            runner = docker_run
+            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | allstar >> allstar.log'"
+        else:
+            runner = run_proc
+            cmd = cmd
         runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final
