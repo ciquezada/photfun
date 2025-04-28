@@ -44,7 +44,7 @@ def pick(in_fits, in_ap, in_daophot, out_lst,
         if use_docker:
             runner = docker_run
             joined_cmds = '\n'.join(cmd_list[1:])
-            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
+            cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daophot >> pick.log'"
         else:
             runner = run_proc
             cmd = cmd

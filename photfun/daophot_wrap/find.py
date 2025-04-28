@@ -40,7 +40,7 @@ def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True,
         if use_docker:
             runner = docker_run
             joined_cmds = '\n'.join(cmd_list[1:])
-            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
+            cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daophot >> find.log'"
         else:
             runner = run_proc
             cmd = cmd
