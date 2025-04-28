@@ -110,26 +110,39 @@ If installed PHOTfun depends on:
 
 ### Using DAOPHOT manually inside the Docker container
 
-You can also open a bash terminal inside the container to run DAOPHOT manually:
+To run DAOPHOT interactively inside a Docker container with access to your local files, mount your working directory using the `-v` flag:
 
 ```bash
-docker run -it ciquezada/photfun-daophot_wrapper /bin/bash
+docker run -it -v /path/to/your/data:/data ciquezada/photfun-daophot_wrapper /bin/bash
 ```
 
-Once inside, you can run `daophot`, `allstar`, and other tools directly:
+
+**Explanation:**
+
+- `-v /path/to/your/data:/data` mounts your local directory into the container at `/data`.
+- `-it` starts an interactive terminal session.
+- `/bin/bash` launches a bash shell inside the container. ([what is docker run -it flag? - Stack Overflow](https://stackoverflow.com/questions/48368411/what-is-docker-run-it-flag?utm_source=chatgpt.com))
+
+Once inside the container, navigate to `/data` to access your files:
+
+```bash
+cd /data
+```
+
+you can run `daophot`, `allstar`, and other tools directly:
 
 ```bash
 daophot
 ```
 
-This allows you to use DAOPHOT/ALLSTAR independently from the GUI if needed.
+This allows you to use DAOPHOT independently from the GUI if needed.
 
 ---
 
 ## Credits
 - **Developer:** Carlos Quezada
 - Inspired by the work of Alvaro Valenzuela
-- Built upon DAOPHOT-II and ALLSTAR by Peter Stetson
+- Built upon DAOPHOT-II by Peter Stetson
 
 ---
 
@@ -226,19 +239,31 @@ Luego ejecuta Docker.app desde Aplicaciones.
 
 ### Uso de DAOPHOT manualmente dentro del contenedor Docker
 
-También puedes abrir una terminal bash dentro del contenedor para ejecutar DAOPHOT manualmente:
+Para ejecutar DAOPHOT interactivamente dentro de un contenedor Docker y acceder a tus archivos locales, monta tu directorio de trabajo utilizando la opción `-v`:
 
 ```bash
-docker run -it ciquezada/photfun-daophot_wrapper /bin/bash
+docker run -it -v /ruta/a/tu/directorio:/data ciquezada/photfun-daophot_wrapper /bin/bash
 ```
 
+**Explicación:**
+
+- `-v /ruta/a/tu/directorio:/data` monta tu directorio local en el contenedor en la ruta `/data`.
+- `-it` inicia una sesión interactiva en la terminal.
+- `/bin/bash` lanza una shell bash dentro del contenedor.
+
+Una vez dentro del contenedor, navega al directorio `/data` para acceder a tus archivos y ejecutar DAOPHOT:
+
+```bash
+cd /data
+
+```
+
+Este enfoque te permite trabajar directamente con tus archivos locales dentro del entorno del contenedor. 
 Una vez dentro, puedes ejecutar `daophot`, `allstar` y otras herramientas directamente:
 
 ```bash
 daophot
 ```
-
-Esto te permite utilizar DAOPHOT/ALLSTAR de manera independiente de la interfaz gráfica (GUI) si lo necesitas.
 
 ---
 
