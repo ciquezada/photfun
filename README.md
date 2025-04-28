@@ -89,7 +89,7 @@ Then open Docker.app from your Applications.
 
 ## Dependencies
 
-If installed natively (without Docker), PHOTfun depends on:
+If installed PHOTfun depends on:
 - `astropy==7.0.1`
 - `faicons==0.2.2`
 - `imageio==2.37.0`
@@ -102,6 +102,7 @@ If installed natively (without Docker), PHOTfun depends on:
 - `scipy==1.15.2`
 - `shiny==1.4.0`
 - `tqdm==4.67.1`
+- `docker`
 
 (These are already pre-installed in the Docker image.)
 
