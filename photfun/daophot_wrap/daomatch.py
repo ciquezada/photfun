@@ -43,7 +43,7 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
         if use_docker:
             runner = docker_run
             joined_cmds = '\n'.join(cmd_list[1:])
-            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
+            cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daomatch >> daomatch.log'"
         else:
             runner = run_proc
             cmd = cmd

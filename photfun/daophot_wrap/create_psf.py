@@ -51,7 +51,7 @@ def create_psf(in_fits, in_ap, in_lst, in_daophot,
         if use_docker:
             runner = docker_run
             joined_cmds = '\n'.join(cmd_list[1:])
-            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
+            cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daophot >> psf.log'"
         else:
             runner = run_proc
             cmd = cmd

@@ -53,7 +53,7 @@ def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
         if use_docker:
             runner = docker_run
             joined_cmds = '\n'.join(cmd_list[1:])
-            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
+            cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | allstar >> allstar.log'"
         else:
             runner = run_proc
             cmd = cmd
