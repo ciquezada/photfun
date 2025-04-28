@@ -39,7 +39,8 @@ def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True,
         # Ejecutar en la carpeta temporal
         if use_docker:
             runner = docker_run
-            cmd = f"sh -c 'printf \"%s\\n\" \"{'\n'.join(cmd_list[1:])}\" | daophot >> find.log'"
+            joined_cmds = '\n'.join(cmd_list[1:])
+            cmd = f"sh -c 'printf \"%s\\n\" \"{joined_cmds}\" | daophot >> find.log'"
         else:
             runner = run_proc
             cmd = cmd
