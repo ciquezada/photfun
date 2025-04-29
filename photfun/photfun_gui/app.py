@@ -1,11 +1,30 @@
+# main.py (antes de todo lo demás)
+import sys, asyncio
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(
+        asyncio.WindowsSelectorEventLoopPolicy()
+    )
+
 from pathlib import Path
-import os
 from shiny import App, ui
 from .server import server
 from .gui_custom import (nav_table_sideview_ui, nav_panel_IMAGE_ui, 
                                             nav_panel_TABLE_ui, nav_panel_DAOPHOT_ui, 
                                             nav_panel_SELECTION_ui, nav_panel_PHOTCUBE_ui,
                                             nav_panel_EXPORT_ui, nav_panel_LOGS_ui)
+import socket
+
+
+def get_local_ipv4():
+    # Crea un socket UDP temporal
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            # No necesita estar disponible, solo para resolver la IP local usada
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        except Exception:
+            ip = "127.0.0.1"  # fallback si falla
+    return ip
 
 app_dir = Path(__file__).parent
 
@@ -84,8 +103,8 @@ app_ui = ui.page_fillable(
 app = App(app_ui, server)
 
 def run_photfun():
-    print("INFO:     Hosted in http://localhost:8000 (ignore http://0.0.0.0:8000)")
-    app.run(host="0.0.0.0", port=8000)
+    # print("INFO:     Hosted in http://localhost:8000 (ignore http://0.0.0.0:8000)")
+    app.run(host=get_local_ipv4(), port=8000)
 
 if __name__ == "__main__":
     app.run()

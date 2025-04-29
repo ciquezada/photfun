@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='photfun',
-    version='0.1.7',
+    version='0.1.8',
     packages=find_packages(),
     install_requires=[
         "astropy==7.0.1",
@@ -21,7 +21,8 @@ setup(
         "scipy==1.15.2",
         "shiny==1.4.0",
         "tqdm==4.67.1",
-        "docker"
+        "docker",
+        "psutil==7.0.0"
     ],
     
     python_requires='>=3.11',
