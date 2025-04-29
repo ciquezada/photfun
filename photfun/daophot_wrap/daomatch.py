@@ -6,12 +6,12 @@ from .docker_handler import run_proc, docker_run
 
 
 def daomatch(in_master_als, in_path_list, out_mch, verbose=True, 
-                	use_docker=run_proc) -> [".mch"]: 
+                	use_docker=None, working_dir=".") -> [".mch"]: 
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_master_als))[0]
         # Crear carpeta temporal
-        temp_dir = os.path.abspath(temp_mkdir(f"{filename}_DAOMATCH_0"))
+        temp_dir = os.path.abspath(temp_mkdir(os.path.join(working_dir, f"{filename}_DAOMATCH_0")))
         temp_master = os.path.join(temp_dir, os.path.basename(in_master_als))
         temp_path_list = [os.path.join(temp_dir, os.path.basename(in_path)) for in_path in in_path_list]
         temp_mch  = os.path.join(temp_dir, "out_match.mch")
@@ -41,13 +41,14 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
                
         # Ejecutar en la carpeta temporal
         if use_docker:
-            runner = docker_run
+            runner = docker_run(use_docker)
             joined_cmds = '\n'.join(cmd_list[1:])
             cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daomatch >> daomatch.log'"
+            runner(cmd, os.path.relpath(temp_dir, start=working_dir))
         else:
             runner = run_proc
             cmd = cmd
-        runner(cmd, temp_dir)
+            runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final
         move_file_noreplace(temp_log, out_log)

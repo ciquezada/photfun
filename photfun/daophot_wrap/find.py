@@ -6,12 +6,12 @@ from .docker_handler import run_proc, docker_run
 
 
 def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True, 
-                	use_docker=None) -> [".coo"]: 
+                	use_docker=None, working_dir=".") -> [".coo"]: 
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
         # Crear carpeta temporal
-        temp_dir = os.path.abspath(temp_mkdir(f"{filename}_FIND_0"))
+        temp_dir = os.path.abspath(temp_mkdir(os.path.join(working_dir, f"{filename}_FIND_0")))
         temp_fits = os.path.join(temp_dir, os.path.basename(in_fits))
         temp_opt  = os.path.join(temp_dir, os.path.basename(in_daophot))
         temp_coo  = os.path.join(temp_dir, os.path.basename(out_coo))
@@ -38,13 +38,14 @@ def find(in_fits, in_daophot, out_coo, sum_aver="1,1", verbose=True,
         
         # Ejecutar en la carpeta temporal
         if use_docker:
-            runner = docker_run
+            runner = docker_run(use_docker)
             joined_cmds = '\n'.join(cmd_list[1:])
             cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daophot >> find.log'"
+            runner(cmd, os.path.relpath(temp_dir, start=working_dir))
         else:
             runner = run_proc
             cmd = cmd
-        runner(cmd, temp_dir)
+            runner(cmd, temp_dir)
 
         # Mover el archivo de salida a la ubicación final
         final_out_coo = move_file_noreplace(temp_coo, out_coo)

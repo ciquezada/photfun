@@ -7,12 +7,12 @@ from .docker_handler import run_proc, docker_run
 
 def create_psf(in_fits, in_ap, in_lst, in_daophot, 
 				out_psf, out_nei, verbose=True, 
-                	use_docker=run_proc) -> [".psf", ".nei"]:
+                	use_docker=None, working_dir=".") -> [".psf", ".nei"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
         # Crear carpeta temporal
-        temp_dir = os.path.abspath(temp_mkdir(f"{filename}_PSF_0"))
+        temp_dir = os.path.abspath(temp_mkdir(os.path.join(working_dir, f"{filename}_PSF_0")))
         temp_fits = os.path.join(temp_dir, os.path.basename(in_fits))
         temp_ap = os.path.join(temp_dir, os.path.basename(in_ap))
         temp_lst = os.path.join(temp_dir, os.path.basename(in_lst))
@@ -49,13 +49,14 @@ def create_psf(in_fits, in_ap, in_lst, in_daophot,
                
         # Ejecutar en la carpeta temporal
         if use_docker:
-            runner = docker_run
+            runner = docker_run(use_docker)
             joined_cmds = '\n'.join(cmd_list[1:])
             cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daophot >> psf.log'"
+            runner(cmd, os.path.relpath(temp_dir, start=working_dir))
         else:
             runner = run_proc
             cmd = cmd
-        runner(cmd, temp_dir)
+            runner(cmd, temp_dir)
 
         check_file(temp_nei, "nei not created: ")
         # Mover el archivo de salida a la ubicación final

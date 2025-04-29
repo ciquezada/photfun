@@ -6,7 +6,7 @@ from itertools import count
 from .phot_table import PhotTable
 from .phot_fits import PhotFits
 from .phot_psf import PhotPSF
-from ..daophot_wrap.docker_handler import init_docker
+from ..daophot_wrap.docker_handler import init_docker, docker_stop_async
 from ..daophot_wrap import (find, phot, pick, create_psf, 
                         sub_fits, allstar, daomatch, 
                         create_master)
@@ -16,7 +16,8 @@ import numpy as np
 from joblib import Parallel, delayed, parallel_backend
 import nest_asyncio
 import asyncio
-
+from itertools import cycle
+from tqdm import tqdm
 
 nest_asyncio.apply()
 
@@ -65,10 +66,13 @@ def delayed_wrap(func):
             result = func(*args, **kwargs)
             return result
         except FileNotFoundError as e:
-            print("ERROR: ", args, kwargs)
+            print("ERROR: ", e, args, kwargs)
+            return error_output
+        except MemoryError as e:
+            print("ERROR: ", e, args, kwargs)
             return error_output
         except RuntimeError as e:
-            print("ERROR: ", args, kwargs)
+            print("ERROR: ", e, args, kwargs)
             return error_output
     return delayed(error_handler_wrap)
 
@@ -109,11 +113,11 @@ class PhotFun:
         self.allstar_recentering = True
 
         # intiaite Docker (if it can)
-        self._docker_run = init_docker()
+        self._docker_container = init_docker(self.working_dir, self.n_jobs)
 
     def reconnect_docker(self):
         # intiaite Docker (if it can)
-        self._docker_run = init_docker()
+        self._docker_container = init_docker(self.working_dir, self.n_jobs, prev=self._docker_container)
 
     def add_table(self, path, *args, **kwargs):
         table = PhotTable(path, *args, **kwargs)
@@ -143,13 +147,15 @@ class PhotFun:
         self._save_opt_files()
 
         # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self._docker_container)
         arg_list = [
                     (fits_path, 
                     os.path.join(self.working_dir, 'daophot.opt'),
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.coo')}"),
                     f"{int(self.find_sum)},{int(self.find_average)}",
                     True if len(fits_obj.path)<4 else False, # verbose=False
-                    self._docker_run,
+                    next(docker_cycle),
+                    self.working_dir,
                     )  
                     for fits_path in fits_obj.path
                 ]
@@ -157,7 +163,7 @@ class PhotFun:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            with parallel_backend('threading'):  # Usar threading para mejor compatibilidad
                 final_out_coo = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
                                                     delayed_wrap(find)(*args) for args in pbar(arg_list)
                                                 )
@@ -181,13 +187,15 @@ class PhotFun:
                     err_msg="La cantidad de archivos FITS y COO no coincide.")
 
         # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self._docker_container)
         arg_list = [
                     (fits_path, coo_path,
                     os.path.join(self.working_dir, 'daophot.opt'),
                     os.path.join(self.working_dir, 'photo.opt'),
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.ap')}"),
                     True if len(input_args)<4 else False, # verbose=False
-                    self._docker_run,
+                    next(docker_cycle),
+                    self.working_dir,
                     )  
                     for fits_path, coo_path in input_args
                 ]
@@ -195,7 +203,7 @@ class PhotFun:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            with parallel_backend('threading'):  # Usar threading para mejor compatibilidad
                 final_out_ap = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
                                                     delayed_wrap(phot)(*args) for args in pbar(arg_list)
                                                 )
@@ -218,13 +226,15 @@ class PhotFun:
                 err_msg="La cantidad de archivos FITS y AP no coincide.")
 
         # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self._docker_container)
         arg_list = [
                     (fits_path, ap_path,
                     os.path.join(self.working_dir, 'daophot.opt'),
                     os.path.join(self.working_dir, f"{os.path.basename(fits_path).replace('.fits', '.lst')}"),
                     f"{int(self.pick_max_stars)},{int(self.pick_min_mag)}",
                     True if len(input_args)<4 else False, # verbose=False
-                    self._docker_run,
+                    next(docker_cycle),
+                    self.working_dir,
                     )  
                     for fits_path, ap_path in input_args
                 ]
@@ -232,7 +242,7 @@ class PhotFun:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            with parallel_backend('threading'):  # Usar threading para mejor compatibilidad
                 final_out_lst = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
                                                     delayed_wrap(pick)(*args) for args in pbar(arg_list)
                                                 )
@@ -260,13 +270,15 @@ class PhotFun:
                         err_msg="La cantidad de archivos FITS/AP/LST no coincide.")
       
         # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self._docker_container)
         arg_list = [
                     (fits_path, ap_path, lst_path,
                     os.path.join(self.working_dir, 'daophot.opt'),
                     os.path.join(output_dir, f"{os.path.basename(fits_path).replace('.fits', '.psf')}"),
                     os.path.join(output_dir, f"{os.path.basename(fits_path).replace('.fits', '.nei')}"),
                     True if len(input_args)<4 else False, # verbose=False
-                    self._docker_run,
+                    next(docker_cycle),
+                    self.working_dir,
                     )  
                     for fits_path, ap_path, lst_path in input_args
                 ]
@@ -274,7 +286,7 @@ class PhotFun:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            with parallel_backend('threading'):  # Usar threading para mejor compatibilidad
                 final_out = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
                                                     delayed_wrap(create_psf)(*args) for args in pbar(arg_list)
                                                 )
@@ -311,13 +323,15 @@ class PhotFun:
                                 nei_table.path, lst_table.path if lst_id else [False],
                                     err_msg="La cantidad de archivos FITS/PSF/NEI/LST no coincide.")
         # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self._docker_container)
         arg_list = [
                     (fits_path, psf_path, nei_path,
                     os.path.join(self.working_dir, 'daophot.opt'),
                     os.path.join(self.working_dir, f"{os.path.splitext(os.path.basename(fits_path))[0]}_sub.fits"),
                     lst_path,
                     True if len(input_args)<4 else False, # verbose=False
-                    self._docker_run,
+                    next(docker_cycle),
+                    self.working_dir,
                     )  
                     for fits_path, psf_path, nei_path, lst_path in input_args
                 ]
@@ -325,7 +339,7 @@ class PhotFun:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            with parallel_backend('threading'):  # Usar threading para mejor compatibilidad
                 final_out_subfits = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
                                                     delayed_wrap(sub_fits)(*args) for args in pbar(arg_list)
                                                 )
@@ -354,6 +368,7 @@ class PhotFun:
                                 err_msg="La cantidad de archivos FITS/PSF/AP no coincide.")
 
         # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self._docker_container)
         arg_list = [
                     (fits_path, psf_path, ap_path,
                     os.path.join(self.working_dir, 'daophot.opt'),
@@ -362,7 +377,8 @@ class PhotFun:
                     os.path.join(self.working_dir, f"{os.path.splitext(os.path.basename(fits_path))[0]}_als_sub.fits"),
                     self.allstar_recentering,
                     True if len(input_args)<4 else False, # verbose=False
-                    self._docker_run,
+                    next(docker_cycle),
+                    self.working_dir,
                     )  
                     for fits_path, psf_path, ap_path in input_args
                 ]
@@ -370,7 +386,7 @@ class PhotFun:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            with parallel_backend('threading'):  # Usar threading para mejor compatibilidad
                 final_out = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
                                                     delayed_wrap(allstar)(*args) for args in pbar(arg_list)
                                                 )
@@ -397,7 +413,7 @@ class PhotFun:
         output_dir = self.working_dir
         out_mch = os.path.join(output_dir, f"{table_name}_{table_list_name}.mch")
         final_out_mch = daomatch(table_obj.path[0], table_list_obj.path, 
-        							out_mch, self._docker_run)
+        							out_mch, self._docker_container[0])
         out_mch_table = self.add_table(final_out_mch)
         return out_mch_table
 
@@ -478,6 +494,7 @@ class PhotFun:
             self.photfun._original_stdout.flush()
 
     def clean_up(self):
+        docker_stop_async(self._docker_container)
         if os.path.exists(self.working_dir):
             shutil.rmtree(self.working_dir)
         sys.stdout = self._original_stdout  # Restaurar stdout original
