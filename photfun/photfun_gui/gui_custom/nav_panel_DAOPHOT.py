@@ -28,17 +28,18 @@ def nav_panel_DAOPHOT_ui():
                     ui.div(
                         ui.h4("Loaded Data", class_="d-inline"),
                         ui.div(
-                            ui.input_action_button(
-                                "reconnect_docker",
-                                "Reconnect Docker",
-                                icon=icon_svg("plug"),
-                                class_="btn-sm btn-outline-primary float-end"
+                            ui.div(
+                                ui.input_action_button(
+                                    "toggle_docker",
+                                    "Connect Docker",  # Puedes actualizar dinámicamente el label desde el server
+                                    icon=icon_svg("plug"),
+                                    class_="btn-sm btn-outline-primary"
+                                ),
+                                class_="d-flex flex-column align-items-end"
                             ),
-                            class_="d-inline-block float-end"
+                            class_="float-end"
                         ),
                         ui.output_plot("plot_fits"),
-                        
-
                     )
                 ),
                 ui.page_fillable(
@@ -68,6 +69,25 @@ def nav_panel_DAOPHOT_ui():
 
 @module.server
 def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_sideview_update, fits_df, tables_df, input_tabs_main):
+        
+    @reactive.Effect
+    @reactive.event(input_tabs_main)
+    def _():
+        if input_tabs_main()=="DAOPHOT":
+            docker_toggle_handler()
+    
+    def docker_toggle_handler():
+        if photfun_client.docker_container[0]:
+            ui.update_action_button("toggle_docker", 
+                label="Disconnect Docker",
+                icon=icon_svg("plug-circle-xmark"), 
+            )
+        else:
+            ui.update_action_button("toggle_docker", 
+                label="Connect Docker",
+                icon=icon_svg("plug"),
+            )
+
     # Obtener la imagen FITS seleccionada
     @reactive.Calc
     def selected_fits():
@@ -128,9 +148,53 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
         fig.tight_layout()
         return fig
     
-    # SAMP reconnect
     @reactive.Effect
-    @reactive.event(input.reconnect_docker)
-    def init_docker():
-        photfun_client.reconnect_docker()
-        return 1
+    @reactive.event(input.toggle_docker)
+    def toggle_docker():
+        if photfun_client.docker_container[0]:
+            # Mensaje pequeño y gris mientras desconecta
+            ui.notification_show(
+                ui.HTML("Disconnecting <strong>Docker</strong>…"),
+                duration=None,
+                close_button=False,
+                id="disconnecting_docker"
+            )
+            photfun_client.disconnect_docker()
+            ui.notification_remove("disconnecting_docker")
+            # Mensaje conciso y verde tras desconexión
+            ui.notification_show(
+                ui.HTML("<strong>Disconnected</strong>"),
+                type="message",
+                duration=2,
+                id="disconnected"
+            )
+            docker_toggle_handler()
+        else:
+            # Mensaje pequeño y gris mientras conecta
+            ui.notification_show(
+                ui.HTML("Connecting <strong>Docker</strong>…"),
+                duration=None,
+                close_button=False,
+                id="connecting_docker"
+            )
+            photfun_client.reconnect_docker()
+            ui.notification_remove("connecting_docker")
+            if photfun_client.docker_container[0]:
+                # Mensaje conciso y verde tras conexión
+                ui.notification_show(
+                    ui.HTML("<strong>Connected</strong>"),
+                    type="message",
+                    duration=2,
+                    id="connected"
+                )
+            else:
+                # Mensaje conciso y rojo si falla
+                ui.notification_show(
+                    ui.HTML("<strong>Failed</strong>"),
+                    type="error",
+                    duration=2,
+                    id="failed"
+                )
+            docker_toggle_handler()
+
+

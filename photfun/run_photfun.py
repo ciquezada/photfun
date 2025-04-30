@@ -1,2 +1,2 @@
-from photfun_gui.app import run_photfun
+from photfun.photfun_gui.app import run_photfun
 run_photfun()
