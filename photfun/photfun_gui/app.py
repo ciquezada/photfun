@@ -15,6 +15,11 @@ from .gui_custom import (nav_table_sideview_ui, nav_panel_IMAGE_ui,
 import socket
 
 
+def find_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))  # bind en puerto 0 => el SO elige uno libre
+        return s.getsockname()[1]
+
 def get_local_ipv4():
     # Crea un socket UDP temporal
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -103,9 +108,11 @@ app_ui = ui.page_fillable(
 app = App(app_ui, server)
 
 def run_photfun():
-    print(f"INFO:     Lan in http://{get_local_ipv4()}:8000")
-    print(f"INFO:     Localhost in http://localhost:8000 or http://127.0.0.1:8000")
-    app.run()
+    port = find_free_port()
+    host_ip = get_local_ipv4()
+    print(f"INFO:     LAN       → http://{host_ip}:{port}")
+    print(f"INFO:     Localhost → http://localhost:{port} or http://127.0.0.1:{port}")
+    app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    app.run()
+    run_photfun()
