@@ -105,7 +105,7 @@ app = App(app_ui, server)
 def run_photfun():
     print(f"INFO:     Lan in http://{get_local_ipv4()}:8000")
     print(f"INFO:     Localhost in http://localhost:8000 or http://127.0.0.1:8000")
-    app.run(port=8000)
+    app.run()
 
 if __name__ == "__main__":
     app.run()
