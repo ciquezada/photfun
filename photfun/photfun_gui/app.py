@@ -103,8 +103,9 @@ app_ui = ui.page_fillable(
 app = App(app_ui, server)
 
 def run_photfun():
-    # print("INFO:     Hosted in http://localhost:8000 (ignore http://0.0.0.0:8000)")
-    app.run(host=get_local_ipv4(), port=8000)
+    print(f"INFO:     Lan in http://{get_local_ipv4()}:8000")
+    print(f"INFO:     Localhost in http://localhost:8000 or http://127.0.0.1:8000")
+    app.run(host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
     app.run()

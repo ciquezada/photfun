@@ -1,8 +1,10 @@
 import os
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 from pathlib import Path
 import threading
 import psutil
+from collections import deque
+import uuid
 try:
     import docker
     HAS_DOCKER = True
@@ -10,18 +12,57 @@ except ImportError:
     HAS_DOCKER = False
 
 
-def run_proc(cmd, workdir):
-    process = Popen(cmd, shell=True, cwd=workdir, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
+def run_proc(cmd, workdir, max_repeats=20, verbose=False):
+    process = Popen(
+        cmd, shell=True, cwd=workdir,
+        stdout=PIPE, stderr=STDOUT, text=True
+    )
 
-def init_docker(working_dir, n_proc=1, prev=None, mem_fraction=0.4):
+    lines = deque(maxlen=max_repeats)
+    killed_due_to_repeats = False
+
+    def monitor():
+        nonlocal killed_due_to_repeats
+        for line in iter(process.stdout.readline, ''):
+             # Muestra en consola
+            lines.append(line.strip())
+            if len(lines) == max_repeats and len(set(lines)) == 1:
+                process.kill()
+                killed_due_to_repeats = True
+                break
+
+    monitor_thread = threading.Thread(target=monitor)
+    monitor_thread.start()
+    process.wait()
+    monitor_thread.join()
+
+    if killed_due_to_repeats:
+        raise RuntimeError(f"DAOPHOT error loop detected (exit code 137)")
+
+    if process.returncode != 0:
+        raise RuntimeError(f"DAOPHOT error (exit code {process.returncode})")
+
+    return process.returncode
+
+
+def init_docker(working_dir, n_proc=1, prev=[False], mem_fraction=0.4, force_docker=False):
     n_proc = os.cpu_count() if n_proc==-1 else n_proc
-    if prev:
+    if prev[0]:
         docker_stop_async(prev)
+    
+    if not force_docker:
+        # Prefer local DAOPHOT if available
+        try:
+            run_proc("daophot << EOF\nexit\nEOF", workdir=working_dir, verbose=False)
+            print("[PhotFun] Native DAOPHOT detected. Docker will not be used.")
+            return [False]
+        except Exception as e:
+            print(f"[PhotFun] Native DAOPHOT not available:\n -> {e}")
+            print("[PhotFun] Attempting to start Docker containers...")
 
     if not HAS_DOCKER:
         print(f"[PhotFun] Docker not available. Running locally.\n -> Import error")
-        return False
+        return [False]
 
     container_names = []
     try:
@@ -46,6 +87,7 @@ def init_docker(working_dir, n_proc=1, prev=None, mem_fraction=0.4):
         for i in range(n_proc):
             container = docker_client.containers.run(
                 image=image_name,
+                name = f"photfun_{uuid.uuid4().hex[:12]}",
                 command="/bin/bash",
                 volumes={str(Path(working_dir).resolve()): {
                     'bind': "/workdir", 
@@ -59,16 +101,16 @@ def init_docker(working_dir, n_proc=1, prev=None, mem_fraction=0.4):
             )
             container_names.append(container.name)
         print("[PhotFun] Docker DAOPHOT available.")
-        print(f"[PhotFun] {mem_str} RAM per core available ")
+        print(f"[Docker] {mem_str} RAM per container available ")
 
     except Exception as e:
         print(f"[PhotFun] Docker not available. Running locally.\n -> {e}")
-        return False
+        return [False]
 
     return container_names
 
 def docker_run(container_name):
-    def docker_runner(cmd, workdir):
+    def docker_runner(cmd, workdir, verbose=False):
         # Ejecutar contenedor
         docker_client = docker.from_env()
         container = docker_client.containers.get(container_name)
@@ -90,14 +132,17 @@ def docker_run(container_name):
     return docker_runner
 
 def _stop_and_remove(name):
+    if not name:
+        print(f"[PhotFun] Docker is disabled.")
+        return 0
     try:
         client = docker.from_env()
         container = client.containers.get(name)
         container.stop()
         container.remove()
-        print(f"[PhotFun] Container '{name}' stopped and removed.")
+        print(f"[Docker] Container '{name}' stopped and removed.")
     except Exception as e:
-        print(f"[PhotFun] Error stopping/removing container '{name}': {e}. Manual intervention required.")
+        print(f"[Docker] Error stopping/removing container '{name}': {e}. Manual intervention required.")
 
 def docker_stop_async(container_names):
     """
