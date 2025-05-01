@@ -1,95 +1,183 @@
 # PHOTfun - PSF Photometry and IFU Spectral Extraction Toolkit
 
 ## Description
-**PHOTfun** is a Python package designed to simplify PSF photometry workflows using the DAOPHOT-II and ALLSTAR suite. It provides an intuitive graphical interface for executing essential photometric tasks and includes a dedicated extension, **PHOTcube**, for extracting stellar spectra from IFU datacubes. The GUI is built using the Shiny web framework for Python, allowing users to interactively manage every step of the process, from source detection to photometric analysis.
+**PHOTfun** is a Python package designed to streamline PSF photometry workflows using the **DAOPHOT-II** suite. It provides a modern graphical interface powered by the **Shiny** web framework, along with the **PHOTcube** extension for extracting stellar spectra from IFU datacubes.
 
-In crowded stellar fields, PHOTcube enables efficient and accurate spectral extraction via monochromatic slicing and PSF photometry, reconstructing high-fidelity stellar spectra.
+Designed with professional astronomers in mind, **PHOTfun** enables efficient PSF-based analysis and visualization even in highly crowded fields.
 
-## Key Features
-- Shiny-based graphical interface for running DAOPHOT-II routines interactively.
-- Executes FIND, PICK, PHOT, PSF, SUBTRACT, and DAOMATCH for full PSF photometry workflows.
-- **PHOTcube** extension for IFU datacube slicing and spectral extraction.
-- Visual inspection and rejection of PSF stars via GUI.
-- Interoperability with external tools like TOPCAT and DS9 through SAMP.
-- Available as a standalone Docker container for easy setup.
+---
 
-## Installation
+## Installation (Required First Step)
 
-### Option 1: Native Installation (Requires DAOPHOT Installed Separately)
-
-PHOTfun can be installed directly from PyPI:
+Before using PHOTfun, install the package from PyPI:
 
 ```bash
 pip install photfun
 ```
 
-**Note:** You must have DAOPHOT-II, and their dependencies installed and available on your system path for full functionality.
+> **Important:** PHOTfun depends on the DAOPHOT-II suite (written in Fortran). If DAOPHOT is not already installed on your machine, **you must use Docker** to run the pre-packaged environment.
 
-### Option 2: Using Docker (Recommended for Standalone Usage)
+---
 
-We provide a pre-built Docker image that includes PHOTfun, DAOPHOT-II, and all necessary dependencies:
-- Docker Image: `ciquezada/photfun-daophot_wrapper`
+## Option A: You Already Have DAOPHOT-II Installed
 
-Only Docker installation is required on your system. Once Docker is installed, the container will automatically handle everything else.
-
-**Quick Start (after installing Docker):**
+If DAOPHOT and ALLSTAR are installed and available in your system’s `$PATH`, you can run PHOTfun directly after the `pip install`:
 
 ```bash
 photfun
 ```
 
-Then open your browser and navigate to `http://localhost:8000` to start using PHOTfun.
+A local Shiny web application will launch, and a message similar to this will appear in your terminal:
 
-#### Docker Installation Instructions by OS
-
-**Ubuntu / Debian:**
-
-```bash
-sudo apt update
-sudo apt install -y docker.io
-sudo systemctl start docker
-sudo systemctl enable docker
+```
+INFO:     Started server process [3396]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:41693 (Press CTRL+C to quit)
 ```
 
-**Fedora:**
+Open the browser and visit the address that appears (e.g., `http://0.0.0.0:41693`) to begin using the interface.
+
+---
+
+## Option B: Use Docker (Recommended if DAOPHOT is Not Installed)
+
+We provide a Docker image with **PHOTfun**, **DAOPHOT-II**, and all dependencies pre-installed:
+- Docker Image: `ciquezada/photfun-daophot_wrapper`
+
+After installing Docker (instructions below), you can launch PHOTfun with:
 
 ```bash
-sudo dnf install -y docker
-sudo systemctl start docker
-sudo systemctl enable docker
+photfun
 ```
 
-**macOS (using Homebrew):**
+It will start the Shiny interface and display a local link (as above) that you can open in your browser.
+
+---
+
+## How to Install Docker (If DAOPHOT is Not Installed)
+
+### Ubuntu (Recommended: install Docker Desktop or follow official Docker guide)
+
+1. Set up Docker’s apt repository:
+
+```bash
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
+
+2. Add the Docker repository:
+
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+3. Install Docker:
+
+```bash
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+4. Start the Docker service:
+
+```bash
+sudo service docker start
+```
+
+5. (Recommended) Add your user to the `docker` group to avoid using `sudo` every time:
+
+```bash
+sudo groupadd docker   # (if group doesn't exist)
+sudo usermod -aG docker $USER
+```
+
+Log out and back in (or reboot) for group changes to take effect.
+
+### macOS
+
+Use Homebrew:
 
 ```bash
 brew install --cask docker
 ```
-Then open Docker.app from your Applications.
 
-**Windows:**
-- Download Docker Desktop from [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/) and install it following the installer prompts.
+Then open the **Docker.app** from your Applications folder.
+
+### Windows
+
+Download and install **Docker Desktop** from:
+
+[https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
 
 ---
 
-## Usage Instructions
+## Quick Start
 
-### PHOTfun GUI (Photometry)
-1. Run `photfun` from the command line.
-2. Select a `.fits` file or set of images to process.
-3. Use the interface to execute FIND, PICK, PHOT, PSF modeling, and photometry steps.
-4. Interactively inspect PSF stars and reject outliers.
+1. Open a terminal and run:
+
+```bash
+photfun
+```
+
+2. After a few seconds, a message will appear showing the local address of the application:
+
+```
+INFO:     Uvicorn running on http://0.0.0.0:41693 (Press CTRL+C to quit)
+```
+
+3. Open that address in your browser. You will see the PHOTfun interface.
+
+---
+
+## How to Use
+
+### PHOTfun GUI (PSF Photometry)
+
+1. Launch the app with `photfun`
+2. Upload your `.fits` images.
+3. Use the GUI to execute:
+   - `FIND`, `PICK`, `PHOT`, `PSF`, `ALLSTAR`, etc.
+4. Visually inspect PSF stars and refine the sample interactively.
 
 ### PHOTcube (IFU Spectra Extraction)
+
 1. Load a datacube in PHOTfun.
-2. Automatically slice the datacube into monochromatic images.
-3. Apply PSF photometry on each slice using previously defined source lists.
-4. Extract and concatenate monochromatic fluxes into 1D spectra for each target.
+2. The cube will be sliced into monochromatic images.
+3. PSF photometry is applied across the cube.
+4. Extracted fluxes are concatenated to form 1D stellar spectra.
+
+---
+
+## Manual Use of DAOPHOT Inside Docker (Advanced)
+
+You can open a shell inside the Docker container and run DAOPHOT directly:
+
+```bash
+docker run -it -v /path/to/your/data:/data ciquezada/photfun-daophot_wrapper /bin/bash
+```
+
+Then:
+
+```bash
+cd /data
+daophot
+```
+
+This allows you to use DAOPHOT independently of the GUI, while keeping all dependencies encapsulated.
 
 ---
 
 ## Dependencies
 
-If installed PHOTfun depends on:
+PHOTfun installs the following dependencies via `pip`:
+
 - `astropy==7.0.1`
 - `faicons==0.2.2`
 - `imageio==2.37.0`
@@ -104,175 +192,227 @@ If installed PHOTfun depends on:
 - `tqdm==4.67.1`
 - `docker`
 
-
----
-
-### Using DAOPHOT manually inside the Docker container
-
-To run DAOPHOT interactively inside a Docker container with access to your local files, mount your working directory using the `-v` flag:
-
-```bash
-docker run -it -v /path/to/your/data:/data ciquezada/photfun-daophot_wrapper /bin/bash
-```
-
-
-**Explanation:**
-
-- `-v /path/to/your/data:/data` mounts your local directory into the container at `/data`.
-- `-it` starts an interactive terminal session.
-- `/bin/bash` launches a bash shell inside the container. ([what is docker run -it flag? - Stack Overflow](https://stackoverflow.com/questions/48368411/what-is-docker-run-it-flag?utm_source=chatgpt.com))
-
-Once inside the container, navigate to `/data` to access your files:
-
-```bash
-cd /data
-```
-
-you can run `daophot`, `allstar`, and other tools directly:
-
-```bash
-daophot
-```
-
-This allows you to use DAOPHOT independently from the GUI if needed.
-
 ---
 
 ## Credits
-- **Developer:** Carlos Quezada
-- Inspired by the work of Alvaro Valenzuela
-- Built upon DAOPHOT-II by Peter Stetson
+
+- **Developer:** Carlos Quezada  
+- Inspired by the work of Álvaro Valenzuela  
+- Built on top of DAOPHOT-II by Peter Stetson  
 
 ---
 
 ## License
+
 This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ---
 
-# (SPANISH) PHOTfun - Fotometría PSF y Extracción Espectral desde Cubos IFU
+# PHOTfun - Fotometría PSF y Extracción Espectral desde Cubos IFU
 
 ## Descripción
-**PHOTfun** es un paquete en Python que facilita la realización de fotometría PSF usando DAOPHOT-II y ALLSTAR, con una interfaz gráfica intuitiva desarrollada con Shiny. Incluye una extensión llamada **PHOTcube**, especialmente diseñada para la extracción espectral desde cubos de datos IFU.
+**PHOTfun** es un paquete en Python diseñado para facilitar flujos de trabajo basados en fotometría PSF utilizando el conjunto de programas de **DAOPHOT-II**. Incluye una interfaz gráfica moderna basada en **Shiny** y una extensión llamada **PHOTcube**, que permite extraer espectros estelares desde cubos de datos IFU.
 
-PHOTcube permite realizar una fotometría por PSF sobre imágenes monocromáticas obtenidas a partir de un cubo IFU, y luego reconstruir los espectros para cada fuente detectada, optimizando la separación de objetos en campos estelares densos.
+Está orientado a astrónomos profesionales y permite análisis eficientes y visuales incluso en campos estelares altamente congestionados.
 
-## Características principales
-- Interfaz gráfica basada en Shiny para ejecutar comandos de DAOPHOT-II.
-- Incluye rutinas FIND, PICK, PHOT, PSF, SUBTRACT y DAOMATCH.
-- Herramienta visual para inspección y rechazo de estrellas PSF.
-- Soporte SAMP para interoperabilidad con herramientas como TOPCAT y DS9.
-- **PHOTcube** para corte del cubo IFU y extracción espectral automatizada.
-- Opción de ejecución standalone vía Docker.
+---
 
-## Instalación
+## Instalación (Primer paso obligatorio)
 
-### Opción 1: Instalación Nativa (requiere DAOPHOT instalado previamente)
-
-Instala directamente desde PyPI:
+Antes de usar PHOTfun, instale el paquete desde PyPI con:
 
 ```bash
 pip install photfun
 ```
 
-**Nota:** Necesitas tener DAOPHOT-II, ALLSTAR y sus dependencias ya instaladas en tu sistema.
+> **Importante:** PHOTfun requiere del software **DAOPHOT-II** (Fortran). Si no lo tiene instalado en su sistema, deberá usar **Docker**, donde ya está incluido.  
+> No es posible utilizar PHOTfun sin DAOPHOT-II.
 
-### Opción 2: Uso de Docker (Recomendado para facilitar la instalación)
+---
 
-Usa el contenedor Docker `ciquezada/photfun-daophot_wrapper`, que incluye PHOTfun, DAOPHOT-II y todas las dependencias necesarias.
+## Opción A: Ya tiene DAOPHOT-II instalado
 
-**Inicio rápido (tras instalar Docker):**
+Si DAOPHOT y ALLSTAR están instalados en su sistema y disponibles en el `$PATH`, puede ejecutar PHOTfun directamente con:
 
 ```bash
 photfun
 ```
 
-Luego abre tu navegador en `http://localhost:8000`.
+Aparecerá un mensaje como el siguiente en la terminal:
 
-#### Instrucciones para instalar Docker según el sistema operativo
-
-**Ubuntu / Debian:**
-
-```bash
-sudo apt update
-sudo apt install -y docker.io
-sudo systemctl start docker
-sudo systemctl enable docker
+```
+INFO:     Started server process [3396]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:41693 (Press CTRL+C to quit)
 ```
 
-**Fedora:**
+Abra esa dirección (`http://0.0.0.0:41693`) en su navegador web para comenzar a usar la interfaz.
+
+---
+
+## Opción B: Usar Docker (Recomendado si no tiene DAOPHOT instalado)
+
+PHOTfun proporciona una imagen Docker con **DAOPHOT-II**, **PHOTfun** y todas las dependencias preinstaladas:
+- Imagen Docker: `ciquezada/photfun-daophot_wrapper`
+
+Después de instalar Docker (ver instrucciones abajo), puede lanzar PHOTfun con:
 
 ```bash
-sudo dnf install -y docker
-sudo systemctl start docker
-sudo systemctl enable docker
+photfun
 ```
 
-**macOS (Homebrew):**
+La aplicación web se abrirá en su navegador mediante un enlace local como `http://0.0.0.0:41693`.
+
+---
+
+## Cómo instalar Docker (solo si no tiene DAOPHOT)
+
+### En Ubuntu
+
+1. Configure el repositorio de Docker:
+
+```bash
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
+
+2. Añada el repositorio oficial:
+
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+3. Instale Docker:
+
+```bash
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+4. Inicie el servicio:
+
+```bash
+sudo service docker start
+```
+
+5. (Opcional pero recomendado) Agregue su usuario al grupo `docker`:
+
+```bash
+sudo groupadd docker   # (si el grupo no existe)
+sudo usermod -aG docker $USER
+```
+
+Cierre sesión y vuelva a entrar (o reinicie) para aplicar los cambios.
+
+### En macOS
+
+Usando Homebrew:
 
 ```bash
 brew install --cask docker
 ```
-Luego ejecuta Docker.app desde Aplicaciones.
 
-**Windows:**
-- Descarga Docker Desktop desde [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/) y sigue las instrucciones.
+Luego abra la aplicación **Docker.app** desde su carpeta de Aplicaciones.
 
----
+### En Windows
 
-## Instrucciones de uso
+Descargue e instale **Docker Desktop** desde:
 
-### Interfaz PHOTfun (Fotometría)
-1. Ejecuta `photfun` desde la terminal.
-2. Selecciona archivos `.fits` o conjuntos de imágenes para procesar.
-3. Ejecuta FIND, PICK, PHOT, PSF y otros pasos desde la interfaz.
-4. Revisa visualmente las estrellas PSF y descarta las inadecuadas.
-
-### PHOTcube (Extracción Espectral desde Cubos IFU)
-1. Carga un cubo en la interfaz PHOTfun.
-2. El cubo será dividido automáticamente en imágenes monocromáticas.
-3. Aplica fotometría PSF usando listas maestras de fuentes.
-4. Los flujos monocromáticos se concatenan para formar los espectros de cada estrella.
+[https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
 
 ---
 
-### Uso de DAOPHOT manualmente dentro del contenedor Docker
+## Inicio Rápido
 
-Para ejecutar DAOPHOT interactivamente dentro de un contenedor Docker y acceder a tus archivos locales, monta tu directorio de trabajo utilizando la opción `-v`:
+1. En la terminal, ejecute:
 
 ```bash
-docker run -it -v /ruta/a/tu/directorio:/data ciquezada/photfun-daophot_wrapper /bin/bash
+photfun
 ```
 
-**Explicación:**
+2. Espere a que aparezca un mensaje como:
 
-- `-v /ruta/a/tu/directorio:/data` monta tu directorio local en el contenedor en la ruta `/data`.
-- `-it` inicia una sesión interactiva en la terminal.
-- `/bin/bash` lanza una shell bash dentro del contenedor.
+```
+INFO:     Uvicorn running on http://0.0.0.0:41693 (Press CTRL+C to quit)
+```
 
-Una vez dentro del contenedor, navega al directorio `/data` para acceder a tus archivos y ejecutar DAOPHOT:
+3. Copie esa dirección (`http://0.0.0.0:41693`) y ábrala en su navegador.  
+   La interfaz web de PHOTfun se abrirá automáticamente.
+
+---
+
+## Cómo usar
+
+### Interfaz gráfica (PHOTfun)
+
+1. Cargue sus imágenes `.fits` desde la interfaz.
+2. Ejecute los comandos del pipeline:
+   - `FIND`, `PICK`, `PHOT`, `PSF`, `ALLSTAR`, etc.
+3. Inspeccione visualmente las estrellas PSF y refine la muestra interactivamente.
+
+### Extracción espectral (PHOTcube)
+
+1. Cargue un cubo IFU en PHOTfun.
+2. El cubo se divide en imágenes monocromáticas.
+3. Se realiza fotometría PSF en cada plano.
+4. Los flujos extraídos se concatenan para formar espectros 1D.
+
+---
+
+## Uso manual de DAOPHOT dentro de Docker (avanzado)
+
+Puede acceder al contenedor y ejecutar DAOPHOT directamente:
+
+```bash
+docker run -it -v /ruta/a/sus/datos:/data ciquezada/photfun-daophot_wrapper /bin/bash
+```
+
+Dentro del contenedor:
 
 ```bash
 cd /data
-
-```
-
-Este enfoque te permite trabajar directamente con tus archivos locales dentro del entorno del contenedor. 
-Una vez dentro, puedes ejecutar `daophot`, `allstar` y otras herramientas directamente:
-
-```bash
 daophot
 ```
+
+Esto le permite trabajar con DAOPHOT como si estuviera instalado localmente, sin necesidad de configurar nada en su máquina anfitriona.
+
+---
+
+## Dependencias
+
+PHOTfun instala automáticamente las siguientes dependencias vía `pip`:
+
+- `astropy==7.0.1`
+- `faicons==0.2.2`
+- `imageio==2.37.0`
+- `joblib==1.4.2`
+- `matplotlib==3.10.1`
+- `nest_asyncio==1.6.0`
+- `numpy==2.2.5`
+- `pandas==2.2.3`
+- `Pillow==11.2.1`
+- `scipy==1.15.2`
+- `shiny==1.4.0`
+- `tqdm==4.67.1`
+- `docker`
 
 ---
 
 ## Créditos
-- **Desarrollador:** Carlos Quezada
-- Inspirado en el trabajo de Alvaro Valenzuela
-- Basado en DAOPHOT-II y ALLSTAR, software de Peter Stetson
+
+- **Desarrollador:** Carlos Quezada  
+- Inspirado por el trabajo de Álvaro Valenzuela  
+- Basado en **DAOPHOT-II** desarrollado por Peter Stetson  
 
 ---
 
-
 ## Licencia
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+
+Este proyecto está licenciado bajo la Licencia MIT. Consulte el archivo `LICENSE` para más detalles.
