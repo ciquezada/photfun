@@ -71,15 +71,15 @@ def nav_table_sideview_server(input, output, session, photfun_client, samp_clien
     # Render tables
     @render.data_frame
     def fits_df():
-        return render.DataTable(fits_data.get(), height="200px", width="100%", selection_mode="row")
+        return render.DataTable(fits_data.get(), height="200px", width="100%", selection_mode="rows")
 
     @render.data_frame
     def tables_df():
-        return render.DataTable(tables_data.get(), height="200px", width="100%", selection_mode="row")
+        return render.DataTable(tables_data.get(), height="200px", width="100%", selection_mode="rows")
 
     @render.data_frame
     def psf_df():
-        return render.DataTable(psf_data.get(), height="200px", width="100%", selection_mode="row")
+        return render.DataTable(psf_data.get(), height="200px", width="100%", selection_mode="rows")
 
     # Delete handlers
     def create_delete_handler(button_id, list_ref, df_type):

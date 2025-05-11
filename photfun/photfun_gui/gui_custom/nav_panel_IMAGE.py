@@ -23,7 +23,7 @@ def nav_panel_IMAGE_ui():
             ],
             [
 
-                ui.input_select("select_fits_file", ui.h4("Select FITS file"), choices=[], size=10),
+                ui.input_select("select_fits_file", ui.h4("Select FITS file"), choices=[], size=10, multiple=True),
                 ui.input_action_button("show_info", "File Info", icon=icon_svg("circle-info"), size="l"),
 
             ],
@@ -82,7 +82,7 @@ def nav_panel_IMAGE_server(input, output, session, photfun_client, samp_client,
         if not fits_obj or not fits_obj.path:
             return
         
-        selected_index = input.select_fits_file()
+        selected_index = next(iter(input.select_fits_file()), None)
         if selected_index is None or selected_index == "":
             return
         
@@ -131,7 +131,7 @@ def nav_panel_IMAGE_server(input, output, session, photfun_client, samp_client,
         if not fits_obj or not fits_obj.path:
             return "No FITS file selected."
         
-        selected_index = input.select_fits_file()
+        selected_index = next(iter(input.select_fits_file()), None)
         if selected_index is None or selected_index == "":
             return "No FITS file selected."
         
@@ -147,11 +147,18 @@ def nav_panel_IMAGE_server(input, output, session, photfun_client, samp_client,
         fits_obj = selected_fits()
         if not fits_obj or not fits_obj.path:
             return "No FITS file selected."
-        selected_index = input.select_fits_file()
-        if selected_index is None or selected_index == "":
+        selected_indexes = input.select_fits_file()
+        if selected_indexes is None or selected_indexes == "":
             return "No FITS file selected."
-        print(f"PhotFun: broadcast({fits_obj.alias})")
-        selected_index = int(selected_index)
-        out_path = fits_obj.path[selected_index]
-        samp_client.broadcast_fits(fits_obj.path[selected_index], fits_obj.alias[selected_index])
+        for selected_index in selected_indexes:
+            selected_index = int(selected_index)
+            out_path = fits_obj.path[selected_index]
+            alias = os.path.basename(out_path)
+            print(f"PhotFun: broadcast({alias})")
+            samp_client.broadcast_fits(fits_obj.path[selected_index], fits_obj.alias[selected_index])
+            ui.notification_show(
+                f"Broadcast {alias}",
+                type="message",
+                duration=5
+            )
     return

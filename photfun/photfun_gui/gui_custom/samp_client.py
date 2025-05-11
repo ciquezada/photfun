@@ -55,6 +55,8 @@ class SAMPclient:
                 self._start_ping_thread()
                 # self.logger.info("Conexión SAMP establecida")
                 print(f"SAMP: succesfully connected")
+            else:
+                print(f"SAMP: already connected")
             return True
                 
         except SAMPHubError as e:

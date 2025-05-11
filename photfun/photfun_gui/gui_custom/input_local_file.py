@@ -1,4 +1,5 @@
 import os
+import re
 from shiny import module, reactive, render, ui
 
 def get_dir_contents(path, ext_filter=None, filter_file=None):
@@ -9,8 +10,19 @@ def get_dir_contents(path, ext_filter=None, filter_file=None):
         if isinstance(ext_filter, str):  
             ext_filter = [ext_filter]
         files = [f for f in files if os.path.splitext(f)[1].lower() in ext_filter]
-    if filter_file and filter_file!="":
-        files = [f for f in files if f.lower().startswith(filter_file.lower())]
+    if filter_file and filter_file != "":
+        raw = filter_file
+        # Si el usuario no puso ningún '*', envolvemos para que sea substring match
+        if "*" not in raw:
+            raw = f"*{raw}*"
+        # Escapamos todos los caracteres especiales, salvo '*'
+        escaped = re.escape(raw)
+        replaced = escaped.replace(r"\*", ".*")
+        # Reemplazamos los '\*' generados por re.escape() con '.*'
+        pattern = f"^{replaced}$"
+        regex = re.compile(pattern, re.IGNORECASE)
+        # Filtramos usando fullmatch (coincidencia completa) o search (si sólo quieres buscar en cualquier parte)
+        files = [f for f in files if regex.match(f)]
     files = sorted(["."] + files, key=lambda f: f.lower())
     return folders, files
 

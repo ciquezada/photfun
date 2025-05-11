@@ -27,7 +27,7 @@ def read_master(filepath):
         return None
 
 def parse_wavelength_from_name(filename):
-    match = re.search(r"slice_(\d+p\d+)\.als", filename)
+    match = re.search(r".*_slice_(\d+p\d+)+(?:_.*)?\.als", filename)
     if match:
         return float(match.group(1).replace('p', '.'))
     else:
@@ -43,13 +43,13 @@ def spectra_compile(als_dir, master_list, output_dir, pbar_extract=tqdm, pbar_sa
         als_files = [
             f
             for f in als_dir
-            if re.match(r".*_slice_\d+p\d+\.als", f)
+            if re.match(r".*_slice_\d+p\d+(?:_.*)?\.als", f)
         ]
     elif os.path.isdir(als_dir):
         als_files = [
             os.path.join(als_dir, f)
             for f in os.listdir(als_dir)
-            if re.match(r".*_slice_\d+p\d+\.als", f)
+            if re.match(r".*_slice_\d+p\d+(?:_.*)?\.als", f)
         ]
     else:
         raise ValueError("Selected path is not a dir or even a list of .als")

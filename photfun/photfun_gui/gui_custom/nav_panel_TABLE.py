@@ -22,20 +22,16 @@ def nav_panel_TABLE_ui():
                 ui.output_data_frame("table_preview"),  # Muestra el DataFrame
             ],
             [
-                ui.input_select("select_table_file", ui.h4("Table Contents"), choices=[], size=10),
+                ui.input_select("select_table_file", ui.h4("Table Contents"), choices=[], size=10, multiple=True),
                 ui.input_action_button("show_info", "File Info", icon=icon_svg("circle-info")),
             ],
         ),
         # Sección de Plots
         ui.layout_column_wrap(
-            ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("magnifying-glass-chart")),
+            ui.input_switch("show_plots", "Show Allstar Metrics", value=False),
+            # ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("magnifying-glass-chart")),
         ),
-        ui.layout_column_wrap(
-            ui.output_plot("plot_chi"),
-            ui.output_plot("plot_sharp"),
-            ui.output_plot("plot_merr"),
-            widths=["1fr", "1fr", "1fr"]
-        ),
+        ui.output_ui("plots_ui"),
     )
 
 @module.server
@@ -93,7 +89,7 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
         if not table_obj or not table_obj.path:
             return pd.DataFrame()  # Retorna un DataFrame vacío si no hay selección
         
-        selected_index = input.select_table_file()
+        selected_index = next(iter(input.select_table_file()), None)
         if selected_index is None or selected_index == "":
             return pd.DataFrame()
 
@@ -122,7 +118,7 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
         if not table_obj:
             return "No file selected."
         
-        selected_index = input.select_table_file()
+        selected_index = next(iter(input.select_table_file()), None)
         if selected_index is None or selected_index == "":
             return "Select a file from the list above."
         
@@ -141,42 +137,43 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
             ui.notification_show("No se ha seleccionado ninguna tabla", type="error")
             return
 
-        selected_index = input.select_table_file()
-        if not selected_index:
+        selected_indexes = input.select_table_file()
+        if not selected_indexes:
             ui.notification_show("Índice de tabla no válido", type="error")
             return
+        
+        for selected_index in selected_indexes:
+            try:
+                selected_index = int(selected_index)
+                df = table_obj.df(selected_index)
+                alias = os.path.basename(table_obj.path[selected_index])
+                print(f"PhotFun: broadcast({alias})")
+                # Crear archivo temporal
+                with tempfile.NamedTemporaryFile(suffix=f"{alias}.vot", delete=False) as tmpfile:
+                    # Convertir DataFrame de pandas a Table de astropy
+                    astropy_table = Table.from_pandas(df)
+                    
+                    # Crear VOTable
+                    votable = from_table(astropy_table)
+                    votable.description = alias
+                    
+                    # Escribir archivo temporal
+                    writeto(votable, tmpfile.name)
+                    out_path = os.path.abspath(tmpfile.name)
+                    # Transmitir
+                    samp_client.broadcast_table(out_path, alias)
+                    ui.notification_show(
+                        f"Broadcast {alias}",
+                        type="message",
+                        duration=5
+                    )
 
-        print(f"PhotFun: broadcast({table_obj.alias})")
-        try:
-            selected_index = int(selected_index)
-            df = table_obj.df(selected_index)
-            alias = table_obj.alias
-             # Crear archivo temporal
-            with tempfile.NamedTemporaryFile(suffix=".vot", delete=False) as tmpfile:
-                # Convertir DataFrame de pandas a Table de astropy
-                astropy_table = Table.from_pandas(df)
-                
-                # Crear VOTable
-                votable = from_table(astropy_table)
-                votable.description = alias
-                
-                # Escribir archivo temporal
-                writeto(votable, tmpfile.name)
-                out_path = os.path.abspath(tmpfile.name)
-                # Transmitir
-                samp_client.broadcast_table(out_path, alias)
+            except Exception as e:
                 ui.notification_show(
-                    f"Broadcast {alias}",
-                    type="message",
-                    duration=5
+                    f"Broadcast error: {str(e)}",
+                    type="error",
+                    duration=10
                 )
-
-        except Exception as e:
-            ui.notification_show(
-                f"Broadcast error: {str(e)}",
-                type="error",
-                duration=10
-            )
 
     # Función utilitaria de validación
     def _check_columns(df, cols):
@@ -186,12 +183,26 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
             return False
         return True
 
+    # Generar contenido de plots dinámicamente
+    @render.ui
+    def plots_ui():
+        if not input.show_plots():
+            # Espacio vacío cuando está desactivado
+            return ui.div(style="height:16px")
+        # Mostrar los tres plots en columnas
+        return ui.layout_column_wrap(
+            ui.output_plot("plot_merr"),
+            ui.output_plot("plot_sharp"),
+            ui.output_plot("plot_chi"),
+        )
+
     # Render plots con chequeo de columnas
     @render.plot
     def plot_chi():
-        input.show_plots()
+        if not input.show_plots():
+            return
         tbl = selected_table()
-        idx = input.select_table_file()
+        idx = next(iter(input.select_table_file()), None)
         if not tbl or idx is None or idx == "":
             return
         df = tbl.df(int(idx))
@@ -210,9 +221,10 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
 
     @render.plot
     def plot_sharp():
-        input.show_plots()
+        if not input.show_plots():
+            return
         tbl = selected_table()
-        idx = input.select_table_file()
+        idx = next(iter(input.select_table_file()), None)
         if not tbl or idx is None or idx == "":
             return
         df = tbl.df(int(idx))
@@ -231,9 +243,10 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
 
     @render.plot
     def plot_merr():
-        input.show_plots()
+        if not input.show_plots():
+            return
         tbl = selected_table()
-        idx = input.select_table_file()
+        idx = next(iter(input.select_table_file()), None)
         if not tbl or idx is None or idx == "":
             return
         df = tbl.df(int(idx))
