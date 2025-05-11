@@ -28,7 +28,7 @@ def nav_panel_TABLE_ui():
         ),
         # Sección de Plots
         ui.layout_column_wrap(
-            ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("bar-chart")),
+            ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("magnifying-glass-chart")),
         ),
         ui.layout_column_wrap(
             ui.output_plot("plot_chi"),
