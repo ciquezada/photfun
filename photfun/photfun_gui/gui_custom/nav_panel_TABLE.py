@@ -26,7 +26,16 @@ def nav_panel_TABLE_ui():
                 ui.input_action_button("show_info", "File Info", icon=icon_svg("circle-info")),
             ],
         ),
-        
+        # Sección de Plots
+        ui.layout_column_wrap(
+            ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("bar-chart")),
+        ),
+        ui.layout_column_wrap(
+            ui.output_plot("plot_chi"),
+            ui.output_plot("plot_sharp"),
+            ui.output_plot("plot_merr"),
+            widths=["1fr", "1fr", "1fr"]
+        ),
     )
 
 @module.server
@@ -168,5 +177,77 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
                 type="error",
                 duration=10
             )
+
+    # Función utilitaria de validación
+    def _check_columns(df, cols):
+        missing = [c for c in cols if c not in df.columns]
+        if missing:
+            ui.notification_show(f"Column(s) missing: {', '.join(missing)}", type="error")
+            return False
+        return True
+
+    # Render plots con chequeo de columnas
+    @render.plot
+    def plot_chi():
+        input.show_plots()
+        tbl = selected_table()
+        idx = input.select_table_file()
+        if not tbl or idx is None or idx == "":
+            return
+        df = tbl.df(int(idx))
+        if not _check_columns(df, ["MAG", "merr", "chi", "sharpness"]):
+            return
+        sel = df[(df.merr < 0.13) & (df.chi < 2) & (df.sharpness.between(-1, 1))]
+        no_sel = df
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(no_sel.MAG, no_sel.chi, 'k+', alpha=0.4)
+        ax.plot(sel.MAG, sel.chi, 'r+')
+        ax.set_xlim(11, 22); ax.set_ylim(0, 7)
+        ax.set_xlabel('MAG'); ax.set_ylabel('$\chi^2$')
+        ax.grid()
+        return fig
+
+    @render.plot
+    def plot_sharp():
+        input.show_plots()
+        tbl = selected_table()
+        idx = input.select_table_file()
+        if not tbl or idx is None or idx == "":
+            return
+        df = tbl.df(int(idx))
+        if not _check_columns(df, ["MAG", "merr", "chi", "sharpness"]):
+            return
+        sel = df[(df.merr < 0.13) & (df.chi < 2) & (df.sharpness.between(-1, 1))]
+        no_sel = df
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(no_sel.MAG, no_sel.sharpness, 'k+', alpha=0.4)
+        ax.plot(sel.MAG, sel.sharpness, 'r+')
+        ax.set_xlim(11, 22); ax.set_ylim(-4, 4)
+        ax.set_xlabel('MAG'); ax.set_ylabel('Sharp')
+        ax.grid()
+        return fig
+
+    @render.plot
+    def plot_merr():
+        input.show_plots()
+        tbl = selected_table()
+        idx = input.select_table_file()
+        if not tbl or idx is None or idx == "":
+            return
+        df = tbl.df(int(idx))
+        if not _check_columns(df, ["MAG", "merr", "chi", "sharpness"]):
+            return
+        sel = df[(df.merr < 0.13) & (df.chi < 2) & (df.sharpness.between(-1, 1))]
+        no_sel = df
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(no_sel.MAG, no_sel.merr, 'k+', alpha=0.4)
+        ax.plot(sel.MAG, sel.merr, 'r+')
+        ax.set_xlim(11, 22); ax.set_ylim(0, 0.5)
+        ax.set_xlabel('MAG'); ax.set_ylabel('$MAG_{err}$')
+        ax.grid()
+        return fig
 
     return
