@@ -41,7 +41,7 @@ def cube_slicer(fits_path, pbar=tqdm):
         num_slices = data.shape[0]
         coords = np.zeros((num_slices, 3))
         coords[:, 2] = np.arange(num_slices)
-        wavelengths = wcs.all_pix2world(coords, 2)[:, 2]*1e10
+        wavelengths = wcs.all_pix2world(coords, 0)[:, 2]*1e10
 
     # Ensure the FITS file is a 3D cube
     if data.ndim != 3:

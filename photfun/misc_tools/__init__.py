@@ -5,3 +5,4 @@ from .temp_mkdir import temp_mkdir
 from .daophot_pbar import daophot_pbar
 from .cube_slicer import cube_slicer
 from .spectra_compiler import spectra_compile
+from .samp_client import SAMPclient

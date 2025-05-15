@@ -11,7 +11,8 @@ from .server import server
 from .gui_custom import (nav_table_sideview_ui, nav_panel_IMAGE_ui, 
                                             nav_panel_TABLE_ui, nav_panel_DAOPHOT_ui, 
                                             nav_panel_SELECTION_ui, nav_panel_PHOTCUBE_ui,
-                                            nav_panel_EXPORT_ui, nav_panel_LOGS_ui)
+                                            nav_panel_EXPORT_ui, nav_panel_LOGS_ui,
+                                            nav_panel_PIPELINES_ui)
 import socket
 
 
@@ -90,6 +91,10 @@ app_ui = ui.page_fillable(
                         ui.nav_panel("PHOTcube", nav_panel_PHOTCUBE_ui("nav_panel_PHOTCUBE"), value="PHOTCUBE"),
                         ui.nav_panel("Export", nav_panel_EXPORT_ui("nav_panel_EXPORT"), value="EXPORT"),
                         ui.nav_panel("Logs", nav_panel_LOGS_ui("nav_panel_LOGS"), value="LOGS"),
+                        ui.nav_menu(
+                            "Experimental",
+                            ui.nav_panel("Pipelines", nav_panel_PIPELINES_ui("nav_panel_PIPELINES"), value="PIPELINES"),
+                        ),   
                         id="tabs_main",
                     ),
                     class_="glass-panel"

@@ -81,7 +81,7 @@ def delayed_wrap(func):
 class PhotFun:
     def __init__(self):
         self.n_jobs = -1
-        self._id_counter = count(start=0, step=1)
+        self.id_counter = count(start=0, step=1)
         self.tables = []
         self.fits_files = []
         self.psf_files = []
@@ -129,21 +129,21 @@ class PhotFun:
 
     def add_table(self, path, *args, **kwargs):
         table = PhotTable(path, *args, **kwargs)
-        table.id = next(self._id_counter)
+        table.id = next(self.id_counter)
         self.tables.append(table)
         print(f"  -> {table.alias}")
         return table
 
     def add_fits(self, path, *args, **kwargs):
         fits_file = PhotFits(path, *args, **kwargs)
-        fits_file.id = next(self._id_counter)
+        fits_file.id = next(self.id_counter)
         self.fits_files.append(fits_file)
         print(f"  -> {fits_file.alias}")
         return fits_file
 
     def add_psf(self, path):
         psf_file = PhotPSF(path)
-        psf_file.id = next(self._id_counter)
+        psf_file.id = next(self.id_counter)
         self.psf_files.append(psf_file)
         print(f"  -> {psf_file.alias}")
         return psf_file
@@ -449,6 +449,7 @@ class PhotFun:
         for og_path, out_path in zip(og_paths, out_paths):
             out_path = copy_file_noreplace(og_path, out_path)
             print(f"export: {os.path.basename(og_path)}\n -> {out_path}")
+
 
     def __repr__(self):
         fits_repr = "\n".join(f"  ID {fits_.id}: {fits_.alias}" for fits_ in self.fits_files)
