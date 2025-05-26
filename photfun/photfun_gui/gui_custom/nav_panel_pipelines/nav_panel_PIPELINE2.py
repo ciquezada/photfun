@@ -52,8 +52,8 @@ def nav_panel_PIPELINE2_ui():
                     ui.input_numeric("param_th", "Threshold (σ)", value=5, step=0.1),
                     "Sigma threshold for a detection"
                 ),
-                                ui.tooltip(
-                ui.input_numeric("param_sum", "Summed", 
+                ui.tooltip(
+                    ui.input_numeric("param_sum", "Summed", 
                                    value=1,  # Valor por defecto de 'fi' en opt_daophot_dict
                                    step=1
                                    ),

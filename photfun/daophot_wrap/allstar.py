@@ -7,7 +7,7 @@ from .docker_handler import run_proc, docker_run
 
 def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
                 out_als, out_fits, RE=True, verbose=True, 
-                	use_docker=None, working_dir=".") -> [".als", ".fits"]:
+                	use_docker=None, working_dir=".", timeout=None) -> [".als", ".fits"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -18,8 +18,8 @@ def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
         temp_fits     = os.path.join(temp_dir, os.path.basename(in_fits))
         temp_psf      = os.path.join(temp_dir, os.path.basename(in_psf))
         temp_ap       = os.path.join(temp_dir, os.path.basename(in_ap))
-        temp_daophot  = os.path.join(temp_dir, os.path.basename(in_daophot))
-        temp_allstar  = os.path.join(temp_dir, os.path.basename(in_allstar))
+        temp_daophot  = os.path.join(temp_dir, "daophot.opt")
+        temp_allstar  = os.path.join(temp_dir, "allstar.opt")
         temp_out_als  = os.path.join(temp_dir, f"{out_als_filename}.als")
         temp_out_fits = os.path.join(temp_dir, f"{out_fits_filename}.fits")
         temp_log      = os.path.join(temp_dir, "allstar.log")
@@ -54,10 +54,11 @@ def allstar(in_fits, in_psf, in_ap, in_daophot, in_allstar,
             runner = docker_run(use_docker)
             joined_cmds = '\n'.join(cmd_list[1:])
             cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | allstar >> allstar.log'"
+            runner(cmd, os.path.relpath(temp_dir, start=working_dir), timeout)
         else:
             runner = run_proc
             cmd = cmd
-        runner(cmd, temp_dir)
+            runner(cmd, temp_dir, timeout)
 
         #     runner(cmd, os.path.relpath(temp_dir, start=working_dir))
         # else:

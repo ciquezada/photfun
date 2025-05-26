@@ -8,11 +8,12 @@ if sys.platform.startswith("win"):
 from pathlib import Path
 from shiny import App, ui
 from .server import server
-from .gui_custom import (nav_table_sideview_ui, nav_panel_IMAGE_ui, 
-                                            nav_panel_TABLE_ui, nav_panel_DAOPHOT_ui, 
-                                            nav_panel_SELECTION_ui, nav_panel_PHOTCUBE_ui,
-                                            nav_panel_EXPORT_ui, nav_panel_LOGS_ui,
-                                            nav_panel_PIPELINES_ui)
+from .gui_custom import (nav_table_sideview_ui, 
+                            nav_panel_IMAGE_ui, nav_panel_TABLE_ui,
+                            nav_panel_PSF_ui, nav_panel_DAOPHOT_ui, 
+                            nav_panel_SELECTION_ui, nav_panel_PHOTCUBE_ui,
+                            nav_panel_EXPORT_ui, nav_panel_LOGS_ui,
+                            nav_panel_PIPELINES_ui, nav_panel_GRIDSEARCH_ui)
 import socket
 
 
@@ -85,6 +86,7 @@ app_ui = ui.page_fillable(
                             "Files",
                             ui.nav_panel("Image", nav_panel_IMAGE_ui("nav_panel_IMAGE"), value="IMAGE"),
                             ui.nav_panel("Table", nav_panel_TABLE_ui("nav_panel_TABLE"), value="TABLE"),
+                            ui.nav_panel("PSF", nav_panel_PSF_ui("nav_panel_PSF"), value="PSF"),
                         ),            
                         ui.nav_panel("DAOphot", nav_panel_DAOPHOT_ui("nav_panel_DAOPHOT"), value="DAOPHOT"),
                         ui.nav_panel("Target Selection", nav_panel_SELECTION_ui("nav_panel_SELECTION"), value="SELECTION"),
@@ -94,6 +96,7 @@ app_ui = ui.page_fillable(
                         ui.nav_menu(
                             "Experimental",
                             ui.nav_panel("Pipelines", nav_panel_PIPELINES_ui("nav_panel_PIPELINES"), value="PIPELINES"),
+                            ui.nav_panel("Grid Search", nav_panel_GRIDSEARCH_ui("nav_panel_GRIDSEARCH"), value="GRIDSEARCH"),
                         ),   
                         id="tabs_main",
                     ),

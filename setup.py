@@ -22,7 +22,8 @@ setup(
         "shiny==1.4.0",
         "tqdm==4.67.1",
         "docker",
-        "psutil==7.0.0"
+        "psutil==7.0.0",
+        "scikit-optimize",
     ],
     
     python_requires='>=3.11',

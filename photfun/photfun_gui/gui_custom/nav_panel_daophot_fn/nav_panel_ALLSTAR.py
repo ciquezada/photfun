@@ -1,4 +1,5 @@
 from ....misc_tools import daophot_pbar
+from ..plot_preview_tools import render_allstar_plots
 from shiny import module, reactive, render, ui
 from faicons import icon_svg  # Para iconos en botones
 
@@ -48,15 +49,18 @@ def nav_panel_ALLSTAR_ui():
     )
 
 @module.server
-def nav_panel_ALLSTAR_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot, navselected_fits):
+def nav_panel_ALLSTAR_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot):
 
     def update_select():
         fits_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.fits_files}
-        ui.update_select("fits_select", choices=fits_choices, selected=str(navselected_fits().id) if navselected_fits() else None)
+        prev_selected_fits = str(selected_fits().id) if selected_fits() else None
+        ui.update_select("fits_select", choices=fits_choices, selected=prev_selected_fits)
         table_psf_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.psf_files}
-        ui.update_select("table_psf_select", choices=table_psf_choices)
+        prev_selected_psf_table = str(selected_psf_table().id) if selected_psf_table() else None
+        ui.update_select("table_psf_select", choices=table_psf_choices, selected=prev_selected_psf_table)
         table_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.tables}
-        ui.update_select("table_select", choices=table_choices)
+        prev_selected_table = str(selected_table().id) if selected_table() else None
+        ui.update_select("table_select", choices=table_choices, selected=prev_selected_table)
 
     # Cargar opciones de FITS en el select_input
     @reactive.Effect
@@ -142,4 +146,46 @@ def nav_panel_ALLSTAR_server(input, output, session, photfun_client, nav_table_s
         nav_table_sideview_update()
         update_select()
 
-    return
+    # Ejecutar ALLSTAR al presionar el botón
+    def allstar_map_action(updates):
+        fits_obj = selected_fits()
+        psf_obj = selected_psf_table()
+        table_obj = selected_table()
+        if not (fits_obj and psf_obj and table_obj):
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        try:
+            with ui.Progress(min=0, max=1) as p:
+                p.set(message="Preparing OPTs")
+                pbar_params = daophot_pbar(p, "OPTs")
+                with ui.Progress(min=0, max=1) as p2:
+                    p2.set(message="Allstar mapping")
+                    pbar = daophot_pbar(p2, "Allstar")
+                    out_table_obj, out_fits_obj = photfun_client.allstar(fits_obj.id, psf_obj.id, table_obj.id, 
+                                                            pbar=pbar, param_updates=updates, pbar_params=pbar_params)
+            ui.notification_show(f"ALLSTAR PSF photometry complete\n -> [{out_table_obj.id}] {out_table_obj.alias}\n (Substracted: [{out_fits_obj.id}] {out_fits_obj.alias})")
+            # Construir el diccionario de previews
+            with ui.Progress(min=0, max=1) as p3:
+                p3.set(message="Preparing previews")
+                pbar_previews = daophot_pbar(p3, "Previews")
+                d = {}
+                for idx, upd in enumerate(pbar_previews(updates)):
+                    # key legible, por ej. "fi=4.0;ps=20.0"
+                    key = ";".join(f"{k}={v:.2f}" for k, v in upd.items())
+                    df = out_table_obj.df(idx)           # accede al array FITS
+                    gif_b64 = render_allstar_plots(df, dpi=100)             # tu función de GIF→base64
+                    d[key] = gif_b64
+            ui.notification_show(f"ALLSTAR map created\n -> [{out_table_obj.id}] {out_table_obj.alias}")
+            nav_table_sideview_update(fits=False)
+            update_select()
+            return d
+            
+        except Exception as e:
+            ui.notification_show(f"Error: {str(e)}", type="error")
+
+        
+        nav_table_sideview_update()
+        update_select()
+    
+    return {"selected_fits":selected_fits,
+            "selected_table":selected_table,
+            "map_action":allstar_map_action}

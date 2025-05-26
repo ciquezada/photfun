@@ -46,4 +46,4 @@ def nav_panel_opt_PHOTO_server(input, output, session, photfun_client, input_tab
             if new_value is not None:
                 photfun_client.photo_opt[key] = float(new_value)
     
-    return
+    return {}

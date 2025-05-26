@@ -50,13 +50,15 @@ def nav_panel_PICK_ui():
     )
 
 @module.server
-def nav_panel_PICK_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot, navselected_fits):
+def nav_panel_PICK_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot):
 
     def update_select():
         fits_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.fits_files}
-        ui.update_select("fits_select", choices=fits_choices, selected=str(navselected_fits().id) if navselected_fits() else None)
+        prev_selected_fits = str(selected_fits().id) if selected_fits() else None
+        ui.update_select("fits_select", choices=fits_choices, selected=prev_selected_fits)
         table_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.tables}
-        ui.update_select("table_select", choices=table_choices)
+        prev_selected_table = str(selected_table().id) if selected_table() else None
+        ui.update_select("table_select", choices=table_choices, selected=prev_selected_table)
 
     # Cargar opciones de FITS en el select_input
     @reactive.Effect
@@ -135,5 +137,5 @@ def nav_panel_PICK_server(input, output, session, photfun_client, nav_table_side
         nav_table_sideview_update(fits=False, psf=False)
         update_select()
 
-    return
+    return {"selected_fits":selected_fits ,"selected_table":selected_table}
 

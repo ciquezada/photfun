@@ -10,11 +10,13 @@ from .nav_panel_pipelines import (
     nav_panel_PIPELINE2_ui, nav_panel_PIPELINE2_server, PIPELINE2_description,
     nav_panel_PIPELINE3_ui, nav_panel_PIPELINE3_server, PIPELINE3_description,
     nav_panel_PIPELINE4_ui, nav_panel_PIPELINE4_server, PIPELINE4_description,
+    nav_panel_PIPELINE5_ui, nav_panel_PIPELINE5_server, PIPELINE5_description,
 )
 from .nav_panel_daophot_fn import (
+    nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server,
     nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server,
     nav_panel_opt_PHOTO_ui, nav_panel_opt_PHOTO_server,
-    nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server,
+    nav_panel_opt_LOADOPT_ui, nav_panel_opt_LOADOPT_server,
 )
 
 
@@ -57,11 +59,13 @@ def nav_panel_PIPELINES_ui():
                         ui.nav_panel("PIPELINE 2", nav_panel_PIPELINE2_ui("nav_panel_PIPELINE2"), value="PIPELINE2"),
                         ui.nav_panel("PIPELINE 3", nav_panel_PIPELINE3_ui("nav_panel_PIPELINE3"), value="PIPELINE3"),
                         ui.nav_panel("PIPELINE 4", nav_panel_PIPELINE4_ui("nav_panel_PIPELINE4"), value="PIPELINE4"),
+                        ui.nav_panel("PIPELINE 5", nav_panel_PIPELINE5_ui("nav_panel_PIPELINE5"), value="PIPELINE5"),
                         ui.nav_menu(
                             "Settings",
+                            ui.nav_panel("ALLSTAR", nav_panel_opt_ALLSTAR_ui("nav_panel_opt_ALLSTAR"), value="opt_ALLSTAR"),
                             ui.nav_panel("DAOPHOT", nav_panel_opt_DAOPHOT_ui("nav_panel_opt_DAOPHOT"), value="opt_DAOPHOT"),
                             ui.nav_panel("PHOTO", nav_panel_opt_PHOTO_ui("nav_panel_opt_PHOTO"), value="opt_PHOTO"),
-                            ui.nav_panel("ALLSTAR", nav_panel_opt_ALLSTAR_ui("nav_panel_opt_ALLSTAR"), value="opt_ALLSTAR"),
+                            ui.nav_panel("LOADOPT", nav_panel_opt_LOADOPT_ui("nav_panel_opt_LOADOPT"), value="opt_LOADOPT"),
                         ),
                         id="tabs_pipelines",  
                     ),
@@ -80,6 +84,7 @@ def nav_panel_PIPELINES_server(input, output, session, photfun_client, nav_table
         "PIPELINE2": PIPELINE2_description,
         "PIPELINE3": PIPELINE3_description,
         "PIPELINE4": PIPELINE4_description,
+        "PIPELINE5": PIPELINE5_description,
         }
 
     @reactive.Effect
@@ -124,9 +129,11 @@ def nav_panel_PIPELINES_server(input, output, session, photfun_client, nav_table
     _ = nav_panel_PIPELINE2_server("nav_panel_PIPELINE2", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_pipelines, selected_fits)
     _ = nav_panel_PIPELINE3_server("nav_panel_PIPELINE3", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_pipelines, selected_fits)
     _ = nav_panel_PIPELINE4_server("nav_panel_PIPELINE4", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_pipelines, selected_fits)
+    _ = nav_panel_PIPELINE5_server("nav_panel_PIPELINE5", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_pipelines, selected_fits)
+    _ = nav_panel_opt_ALLSTAR_server("nav_panel_opt_ALLSTAR", photfun_client, input_tabs_main, input.tabs_pipelines)
     _ = nav_panel_opt_DAOPHOT_server("nav_panel_opt_DAOPHOT", photfun_client, input_tabs_main, input.tabs_pipelines)
     _ = nav_panel_opt_PHOTO_server("nav_panel_opt_PHOTO", photfun_client, input_tabs_main, input.tabs_pipelines)
-    _ = nav_panel_opt_ALLSTAR_server("nav_panel_opt_ALLSTAR", photfun_client, input_tabs_main, input.tabs_pipelines)
+    _ = nav_panel_opt_LOADOPT_server("nav_panel_opt_LOADOPT", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_pipelines)
 
 
     # Dynamic description display

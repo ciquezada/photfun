@@ -27,6 +27,17 @@ def get_dir_contents(path, ext_filter=None, filter_file=None):
     return folders, files
 
 
+def find_existing_parent(path):
+    path = os.path.abspath(path)
+    while not os.path.isdir(path):
+        parent = os.path.dirname(path)
+        if parent == path:
+            # Se llegó a la raíz y no se encontró un directorio válido
+            return path
+        path = parent
+    return path
+
+
 ROOT_PATH = os.getcwd()
 
 
@@ -61,11 +72,29 @@ def input_local_file_server(input, output, session, ext_filter):
     @reactive.effect
     @reactive.event(input.button_open)
     def _():
-        folders, files = get_dir_contents(current_path(), ext_filter)
+        new_path = os.path.abspath(current_path())
+        valid_path = find_existing_parent(new_path)
+        if valid_path:
+            current_path.set(valid_path)
+            # Actualiza los selectores con el nuevo directorio válido
+            folders, files = get_dir_contents(valid_path, ext_filter)
+        else:
+            session.send_message(f"‘{raw_path}’ invalid directory.", type="error")
+            return 
+
         FOLDER_BROWSER = ui.modal(
             ui.div(
                 ui.h4("Select a folder", class_="modal-title"),
-                ui.output_text_verbatim("current_path_display"),
+                # ui.output_text_verbatim("current_path_display"),
+                # — CAMBIO: input_text en lugar de output_text_verbatim —
+                ui.input_text(
+                    "current_path_input",
+                    None,
+                    value=current_path(),
+                    placeholder="Type or edit path…",
+                    width="100%",
+                    update_on="blur"  # dispara al perder foco o Enter
+                ),
                 ui.layout_column_wrap(
                     ui.div(
                         ui.input_select("in_folder", "Folders", 
@@ -107,6 +136,23 @@ def input_local_file_server(input, output, session, ext_filter):
         ui.modal_show(FOLDER_BROWSER)
     
     @reactive.effect
+    @reactive.event(input.current_path_input)
+    def on_path_edit():
+        raw_path = input.current_path_input().strip()
+        new_path = os.path.abspath(raw_path)
+        valid_path = find_existing_parent(new_path)
+        if valid_path:
+            current_path.set(valid_path)
+            # Actualiza los selectores con el nuevo directorio válido
+            folders, files = get_dir_contents(valid_path, ext_filter, input.filter_file())
+            ui.update_select("in_folder", choices=folders)
+            ui.update_select("in_file", choices=files)
+            # Opcional: actualizar el campo de texto con la ruta válida encontrada
+            ui.update_text("current_path_input", value=valid_path)
+        else:
+            session.send_message(f"‘{raw_path}’ invalid directory.", type="error")
+
+    @reactive.effect
     @reactive.event(input.in_folder)
     def change_directory():
         selected = input.in_folder()
@@ -116,6 +162,7 @@ def input_local_file_server(input, output, session, ext_filter):
             folders, files = get_dir_contents(current_path(), ext_filter, input.filter_file())
             ui.update_select("in_folder", choices=folders)
             ui.update_select("in_file", choices=files)
+            ui.update_text("current_path_input", value=current_path())
     
     @reactive.effect
     @reactive.event(input.filter_file)
@@ -125,10 +172,10 @@ def input_local_file_server(input, output, session, ext_filter):
         ui.update_select("in_file", choices=files)
 
 
-    @output
-    @render.text
-    def current_path_display():
-        return current_path()
+
+    # @reactive.Calc
+    # def current_path_display():
+    #     return ui.update_text("current_path_input", current_path())
         
     @reactive.effect
     @reactive.event(input.button_select_file)

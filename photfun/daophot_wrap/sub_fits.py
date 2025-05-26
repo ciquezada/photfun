@@ -7,7 +7,7 @@ from .docker_handler import run_proc, docker_run
 
 def sub_fits(in_fits, in_psf, in_sub, in_daophot, 
 				out_fits, in_lst=False, verbose=True, 
-                	use_docker=None, working_dir=".") -> [".fits"]:
+                	use_docker=None, working_dir=".", timeout=None) -> [".fits"]:
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_fits))[0]
@@ -17,7 +17,7 @@ def sub_fits(in_fits, in_psf, in_sub, in_daophot,
         temp_fits = os.path.join(temp_dir, os.path.basename(in_fits))
         temp_psf = os.path.join(temp_dir, os.path.basename(in_psf))
         temp_sub = os.path.join(temp_dir, os.path.basename(in_sub))
-        temp_daophot  = os.path.join(temp_dir, os.path.basename(in_daophot))
+        temp_daophot  = os.path.join(temp_dir, "daophot.opt")
         temp_out_fits  =  os.path.join(temp_dir, f"{out_filename}.fits")
         temp_log  = os.path.join(temp_dir, "sub.log")
         out_log = os.path.join(os.path.dirname(out_fits), "sub.log")
@@ -59,11 +59,11 @@ def sub_fits(in_fits, in_psf, in_sub, in_daophot,
             runner = docker_run(use_docker)
             joined_cmds = '\n'.join(cmd_list[1:])
             cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daophot >> sub.log'"
-            runner(cmd, os.path.relpath(temp_dir, start=working_dir))
+            runner(cmd, os.path.relpath(temp_dir, start=working_dir), timeout)
         else:
             runner = run_proc
             cmd = cmd
-            runner(cmd, temp_dir)
+            runner(cmd, temp_dir, timeout)
 
         # Mover el archivo de salida a la ubicación final
         final_out_fits = move_file_noreplace(temp_out_fits, out_fits)

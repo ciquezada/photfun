@@ -6,9 +6,10 @@ import time
 @module.ui
 def nav_panel_LOGS_ui():
     return ui.page_fluid(
-        ui.layout_column_wrap(
+        ui.layout_columns(
             ui.input_action_button("refresh_logs", "Refresh Logs", icon=icon_svg("arrows-rotate")),
-            ui.output_ui("log_display", fillable=True)
+            ui.output_ui("log_display", fillable=True),
+            col_widths=(3, 9)
         ),
         height="85vh"
     )

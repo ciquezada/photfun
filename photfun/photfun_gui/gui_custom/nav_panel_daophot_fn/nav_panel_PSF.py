@@ -1,6 +1,10 @@
+from tqdm import tqdm
 from ....misc_tools import daophot_pbar
 from shiny import module, reactive, render, ui
 from faicons import icon_svg  # Para iconos en botones
+from ..plot_preview_tools import psf_preview
+import numpy as np
+
 
 @module.ui
 def nav_panel_PSF_ui():
@@ -33,19 +37,22 @@ def nav_panel_PSF_ui():
                 style="padding-left: 20px;"
             ),
             col_widths=(8, 4)
-        )
+        ),
     )
 
 @module.server
-def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot, navselected_fits):
+def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot):
 
     def update_select():
         fits_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.fits_files}
-        ui.update_select("fits_select", choices=fits_choices, selected=str(navselected_fits().id) if navselected_fits() else None)
+        prev_selected_fits = str(selected_fits().id) if selected_fits() else None
+        ui.update_select("fits_select", choices=fits_choices, selected=prev_selected_fits)
         table_ap_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.tables}
-        ui.update_select("table_ap_select", choices=table_ap_choices)
+        prev_selected_ap_table = str(selected_ap_table().id) if selected_ap_table() else None
+        ui.update_select("table_ap_select", choices=table_ap_choices, selected=prev_selected_ap_table)
         table_lst_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.tables}
-        ui.update_select("table_lst_select", choices=table_lst_choices)
+        prev_selected_lst_table = str(selected_lst_table().id) if selected_lst_table() else None
+        ui.update_select("table_lst_select", choices=table_lst_choices, selected=prev_selected_lst_table)
 
     # Cargar opciones de FITS en el select_input
     @reactive.Effect
@@ -114,8 +121,49 @@ def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sidev
                 ui.notification_show(f"Error: {str(e)}", type="error")
         else:
             ui.notification_show("Error: FITS not selected.", type="warning")
-        
         nav_table_sideview_update(fits=False)
         update_select()
 
-    return
+    def psf_map_action(updates):
+        fits_obj = selected_fits()
+        ap_obj = selected_ap_table()
+        lst_obj = selected_lst_table()
+        if fits_obj and ap_obj and lst_obj:
+            try:  
+                with ui.Progress(min=0, max=1) as p:
+                    p.set(message="Preparing OPTs")
+                    pbar_params = daophot_pbar(p, "OPTs")
+                    with ui.Progress(min=0, max=1) as p2:
+                        p2.set(message="PSF mapping")
+                        pbar = daophot_pbar(p2, "PSF")
+                        out_psf_obj, out_table_obj = photfun_client.psf(fits_obj.id, ap_obj.id, lst_obj.id, 
+                                                                            pbar=pbar, param_updates=updates,
+                                                                            pbar_params=pbar_params)
+                out_psf_obj.alias = f"{out_psf_obj.alias} (PSF map)"
+                out_table_obj.alias = f"{out_psf_obj.alias} (.nei map)"
+                # Construir el diccionario de previews
+                with ui.Progress(min=0, max=1) as p3:
+                    p3.set(message="Preparing previews")
+                    pbar_previews = daophot_pbar(p3, "Previews")
+                    d = {}
+                    for idx, upd in enumerate(pbar_previews(updates)):
+                        # key legible, por ej. "fi=4.0;ps=20.0"
+                        key = ";".join(f"{k}={v:.2f}" for k, v in upd.items())
+                        if "ERROR" in out_psf_obj.path[idx]:
+                            continue
+                        img = out_psf_obj.model(idx)           # accede al array FITS
+                        gif_b64 = psf_preview(img, dpi=100)             # tu función de GIF→base64
+                        d[key] = gif_b64
+                ui.notification_show(f"PSF map created\n -> [{out_psf_obj.id}] {out_psf_obj.alias}")
+                nav_table_sideview_update(fits=False)
+                update_select()
+                return d
+            except Exception as e:
+                ui.notification_show(f"Error: {str(e)}", type="error")
+        else:
+            ui.notification_show("Error: FITS not selected.", type="warning")
+        return None
+
+    return {"selected_fits":selected_fits ,
+            "selected_table":selected_lst_table,
+            "map_action":psf_map_action}

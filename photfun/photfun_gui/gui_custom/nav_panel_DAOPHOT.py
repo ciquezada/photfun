@@ -4,6 +4,8 @@ from faicons import icon_svg
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
+import itertools
+import re
 # from astropy.visualization import ZScaleInterval
 from .nav_panel_daophot_fn import (
     nav_panel_FIND_ui, nav_panel_FIND_server,
@@ -14,9 +16,10 @@ from .nav_panel_daophot_fn import (
     nav_panel_ALLSTAR_ui, nav_panel_ALLSTAR_server,
     nav_panel_DAOMATCH_ui, nav_panel_DAOMATCH_server,
     nav_panel_CREATE_MASTER_ui, nav_panel_CREATE_MASTER_server,
+    nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server,
     nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server,
     nav_panel_opt_PHOTO_ui, nav_panel_opt_PHOTO_server,
-    nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server,
+    nav_panel_opt_LOADOPT_ui, nav_panel_opt_LOADOPT_server,
 )
 
 
@@ -54,22 +57,73 @@ def nav_panel_DAOPHOT_ui():
                         ui.nav_panel("MASTER", nav_panel_CREATE_MASTER_ui("nav_panel_CREATE_MASTER"), value="CREATE_MASTER"),
                         ui.nav_menu(
                             "Settings",
+                            ui.nav_panel("ALLSTAR", nav_panel_opt_ALLSTAR_ui("nav_panel_opt_ALLSTAR"), value="opt_ALLSTAR"),
                             ui.nav_panel("DAOPHOT", nav_panel_opt_DAOPHOT_ui("nav_panel_opt_DAOPHOT"), value="opt_DAOPHOT"),
                             ui.nav_panel("PHOTO", nav_panel_opt_PHOTO_ui("nav_panel_opt_PHOTO"), value="opt_PHOTO"),
-                            ui.nav_panel("ALLSTAR", nav_panel_opt_ALLSTAR_ui("nav_panel_opt_ALLSTAR"), value="opt_ALLSTAR"),
+                            ui.nav_panel("LOAD OPT", nav_panel_opt_LOADOPT_ui("nav_panel_opt_LOADOPT"), value="opt_LOADOPT"),
                         ),
                         id="tabs_daophot",  
                     ),
                 ),  
                 col_widths=(6, 6),
             ),
+            # Sección de Plots
+            ui.layout_column_wrap(
+                ui.input_switch("show_mapping", "(Experimental) Mapping mode", value=False),
+                # ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("magnifying-glass-chart")),
+            ),
+            ui.output_ui("mapping_ui"),
         )
     return m
 
 
 @module.server
 def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_sideview_update, fits_df, tables_df, input_tabs_main):
-        
+
+    # Dentro de nav_panel_PSF_server
+    plot_map_preview = reactive.Value({})
+
+    panel_args = [photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot]        
+    panel_selection = {}
+    panel_selection["FIND"] = nav_panel_FIND_server("nav_panel_FIND", *panel_args)
+    panel_selection["PHOT"] = nav_panel_PHOT_server("nav_panel_PHOT", *panel_args)
+    panel_selection["PICK"] = nav_panel_PICK_server("nav_panel_PICK", *panel_args)
+    panel_selection["PSF"] = nav_panel_PSF_server("nav_panel_PSF", *panel_args)
+    panel_selection["SUB"] = nav_panel_SUB_server("nav_panel_SUB", *panel_args)
+    panel_selection["ALLSTAR"] = nav_panel_ALLSTAR_server("nav_panel_ALLSTAR", *panel_args)
+    panel_selection["DAOMATCH"] = nav_panel_DAOMATCH_server("nav_panel_DAOMATCH", *panel_args)
+    panel_selection["CREATE_MASTER"] = nav_panel_CREATE_MASTER_server("nav_panel_CREATE_MASTER", *panel_args)
+    panel_selection["opt_ALLSTAR"] = nav_panel_opt_ALLSTAR_server("nav_panel_opt_ALLSTAR", photfun_client, input_tabs_main, input.tabs_daophot)
+    panel_selection["opt_DAOPHOT"] = nav_panel_opt_DAOPHOT_server("nav_panel_opt_DAOPHOT", photfun_client, input_tabs_main, input.tabs_daophot)
+    panel_selection["opt_PHOTO"] = nav_panel_opt_PHOTO_server("nav_panel_opt_PHOTO", photfun_client, input_tabs_main, input.tabs_daophot)
+    panel_selection["opt_LOADOPT"] = nav_panel_opt_LOADOPT_server("nav_panel_opt_LOADOPT", *panel_args)
+
+
+    def parse_triplet(txt, name):
+        """Devuelve (min, max, step) o lanza ValueError."""
+        parts = [p.strip() for p in txt.split(",")]
+        if len(parts) != 3:
+            raise ValueError(f"{name}: 3 comma separated values expected.")
+        try:
+            mn, mx, st = map(float, parts)
+        except:
+            raise ValueError(f"{name}: only numbers separated by comma.")
+        if not (mn < mx and st > 0):
+            raise ValueError(f"{name}: min < max and step > 0 required.")
+        return mn, mx, st
+
+    def build_grid_params(ranges_dict):
+        """
+        ranges_dict: { 'fw':(mn,mx,num_points), ... }
+        Retorna lista de dicts con todas las combinaciones.
+        """
+        keys = list(ranges_dict.keys())
+        arrays = [ np.arange(r[0], r[1], r[2]) for r in ranges_dict.values() ]
+        grid = []
+        for combo in itertools.product(*arrays):
+            grid.append({ k: round(val, 2) for k, val in zip(keys, combo) })
+        return grid
+
     @reactive.Effect
     @reactive.event(input_tabs_main)
     def _():
@@ -91,34 +145,14 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
     # Obtener la imagen FITS seleccionada
     @reactive.Calc
     def selected_fits():
-        selected_row = fits_df.data_view(selected=True)
-        if selected_row.empty:
-            return None
-        selected_id = selected_row.iloc[0]["FITS"]
-        fits_obj = next((f for f in photfun_client.fits_files if f.id == selected_id), None)
-        return fits_obj
+        selected_fits_obj = panel_selection[input.tabs_daophot()].get("selected_fits")
+        return selected_fits_obj() if selected_fits_obj else None
 
     # Obtener la tabla seleccionada
     @reactive.Calc
     def selected_table():
-        selected_row = tables_df.data_view(selected=True)
-        if selected_row.empty:
-            return None
-        selected_id = selected_row.iloc[0]["Table"]
-        table_obj = next((f for f in photfun_client.tables if f.id == selected_id), None)
-        return table_obj
-
-    _ = nav_panel_FIND_server("nav_panel_FIND", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot, selected_fits)
-    _ = nav_panel_PHOT_server("nav_panel_PHOT", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot, selected_fits)
-    _ = nav_panel_PICK_server("nav_panel_PICK", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot, selected_fits)
-    _ = nav_panel_PSF_server("nav_panel_PSF", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot, selected_fits)
-    _ = nav_panel_SUB_server("nav_panel_SUB", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot, selected_fits)
-    _ = nav_panel_ALLSTAR_server("nav_panel_ALLSTAR", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot, selected_fits)
-    _ = nav_panel_DAOMATCH_server("nav_panel_DAOMATCH", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot)
-    _ = nav_panel_CREATE_MASTER_server("nav_panel_CREATE_MASTER", photfun_client, nav_table_sideview_update, input_tabs_main, input.tabs_daophot)
-    _ = nav_panel_opt_DAOPHOT_server("nav_panel_opt_DAOPHOT", photfun_client, input_tabs_main, input.tabs_daophot)
-    _ = nav_panel_opt_PHOTO_server("nav_panel_opt_PHOTO", photfun_client, input_tabs_main, input.tabs_daophot)
-    _ = nav_panel_opt_ALLSTAR_server("nav_panel_opt_ALLSTAR", photfun_client, input_tabs_main, input.tabs_daophot)
+        selected_table_obj = panel_selection[input.tabs_daophot()].get("selected_table")
+        return selected_table_obj() if selected_table_obj else None
 
 
     # Graficar la imagen FITS con posiciones de la tabla si está disponible
@@ -197,4 +231,183 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
                 )
             docker_toggle_handler()
 
+    mapping_ui_cache = reactive.Value(None)
 
+    @render.ui
+    def mapping_ui():
+        if not input.show_mapping():
+            return ui.div(style="height:16px")
+        cached = mapping_ui_cache.get()
+        if cached is not None:
+            return cached
+
+        def param_row(key, label, value):
+            return ui.div(
+                ui.input_checkbox(f"enable_{key}", label, value=False),
+                ui.input_text(f"grid_{key}", "", value=value, 
+                            placeholder="min, max, step", width="100%"),
+                class_="mb-4 p-3 border rounded"
+            )
+
+        panel = ui.div(
+                ui.h5("Parameters to map"),
+                ui.layout_column_wrap(
+                    param_row("fw", "FWHM Range",         "3, 5, 0.5"),
+                    param_row("fi", "Fitting Radius",     "4, 6, 0.5"),
+                    param_row("ps", "PSF Radius",         "6, 11, 0.5"),
+                    param_row("is", "Inner Sky Radius",   "1, 6, 0.5"),
+                    param_row("os", "Outer Sky Radius",   "6, 12, 0.5"),
+                    # col_widths=[2,2,2,2,2],
+                    style="padding-left: 20px;"
+                ),
+                ui.input_action_button("map_btn", f"Map {input.tabs_daophot()}", icon=icon_svg("searchengin"), width="auto"),
+                ui.output_ui("preview_panel")
+            )
+        
+        mapping_ui_cache.set(panel)
+        return panel
+    
+    @reactive.Effect
+    @reactive.event(input.map_btn)
+    def confirm_run_map_action():
+        try: 
+            rngs = {}
+            for key in ("fw", "fi", "ps", "is", "os"):
+                if getattr(input, f"enable_{key}")():
+                    txt = getattr(input, f"grid_{key}")()
+                    rngs[key] = parse_triplet(txt, key.upper())
+            if not rngs:
+                ui.notification_show("Activate at least one parameter to map.")
+                return
+            updates = build_grid_params(rngs)
+            if not updates:
+                ui.notification_show("Not parameters found.")
+                return
+            # Estimación de tiempo: 4 minutos por cada 1000 parámetros
+            n_params = len(updates)
+            estimated_minutes = round(50 * n_params / 6300, 1)
+
+            # Lanza un modal de confirmación con IDs únicos
+            ui.modal_show(
+                ui.modal(
+                    ui.p(f"You're about to map {n_params} grid points. "
+                        f"Estimated time: {estimated_minutes} minutes.\n\n"
+                        "Do you want to continue?"),
+                    title="Confirm Mapping",
+                    easy_close=True,
+                    footer=ui.row(
+                        ui.column(6, ui.input_action_button(f"map_confirm", "Confirm", class_="btn-success w-100")),
+                        ui.column(6, ui.input_action_button(f"map_cancel", "Cancel", class_="btn-secondary w-100")),
+                    ),
+                )
+            )
+        except Exception as e:
+            ui.notification_show(f"Error: {str(e)}", type="error")
+
+    # 2. El efecto que se dispara SOLO cuando el usuario confirma
+    @reactive.Effect
+    @reactive.event(input.map_confirm)
+    def on_map_confirm():
+        ui.modal_remove()
+        run_map_action()
+
+
+    # 3. El efecto que se dispara SOLO cuando el usuario cancela
+    @reactive.Effect
+    @reactive.event(input.map_cancel)
+    def on_map_cancel():
+        ui.modal_remove()
+        ui.notification_show("Mapping cancelled.")
+
+
+    def run_map_action():
+        try: 
+            rngs = {}
+            for key in ("fw", "fi", "ps", "is", "os"):
+                if getattr(input, f"enable_{key}")():
+                    txt = getattr(input, f"grid_{key}")()
+                    rngs[key] = parse_triplet(txt, key.upper())
+            if not rngs:
+                ui.notification_show("Activate at least one parameter to map.")
+                return
+            updates = build_grid_params(rngs)
+            if not updates:
+                ui.notification_show("Not parameters found.")
+                return
+            if panel_selection[input.tabs_daophot()].get("map_action"):
+                map_action = panel_selection[input.tabs_daophot()].get("map_action")
+                plot_map_preview.set(map_action(updates))
+            else:
+                ui.notification_show("Not mapping configured for this Subroutine.", type="warning")
+        except Exception as e:
+            ui.notification_show(f"Error: {str(e)}", type="error")
+
+    @render.ui
+    def preview_panel():
+        map_dict = plot_map_preview.get()
+        if not map_dict:
+            return ui.div("No previews created", style="color: #666; height: 16px;")
+
+        # 1) Extraer lista de parámetros de la primera key
+        first_key = next(iter(map_dict))
+        param_names = [kv.split("=")[0] for kv in first_key.split(";")]
+        rngs = {}
+        for key in ("fw", "fi", "ps", "is", "os"):
+            if getattr(input, f"enable_{key}")():
+                txt = getattr(input, f"grid_{key}")()
+                rngs[key] = parse_triplet(txt, key.upper())
+
+        # 3) Crear un slider por parámetro
+        sliders = []
+        for p in param_names:
+            vs = rngs.get(p)
+            if not vs:
+                continue
+            sliders.append(
+                ui.input_slider(
+                    f"preview_{p}",        # inputId dinámico
+                    p.upper(),             # etiqueta
+                    min=vs[0],
+                    max=vs[1]-vs[2],
+                    value=vs[0],
+                    step=vs[2]
+                )
+            )
+
+        # 4) Devolver todos los sliders + placeholder para la imagen
+        return ui.layout_columns(
+            ui.div(*sliders),
+            ui.output_ui("plot_preview"),
+            col_widths=(4, 8),
+            style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;"
+        )
+
+    @render.ui
+    def plot_preview():
+        map_dict = plot_map_preview.get()
+        if not map_dict:
+            return ui.div()  # nada que mostrar
+
+        # Reconstruir la key usando los valores actuales de los sliders
+        # => "fi=4.0;ps=20.0;fw=3.0" en el mismo orden que en preview_panel
+        first_key = next(iter(map_dict))
+        param_names = [kv.split("=")[0] for kv in first_key.split(";")]
+
+        key_parts = []
+        for p in param_names:
+            val = getattr(input, f"preview_{p}")()
+            # Aseguramos el mismo formateo en string que las keys originales
+            key_parts.append(f"{p}={val:.2f}")
+        key = ";".join(key_parts)
+
+        img_b64 = map_dict.get(key)
+        if not img_b64:
+            return ui.div(f"No image for {key}", style="color: red;")
+        sizes_dict = {  "FIND": "100%",
+                        "PHOT": "100%",
+                        "PICK": "100%",
+                        "PSF": "50%",
+                        "ALLSTAR": "100%",
+                        }
+        return ui.img(src=f"data:image/gif;base64,{img_b64}", 
+                        width=sizes_dict[input.tabs_daophot()])

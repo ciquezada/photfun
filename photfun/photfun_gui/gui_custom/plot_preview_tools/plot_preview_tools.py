@@ -37,7 +37,10 @@ def source_preview(row, fits_image, n_jobs=1):
     # Crear la figura para la animación
     fig, ax = plt.subplots(figsize=(2, 2), dpi=200)
     # vmin, vmax = np.percentile(image_data, [5, 95])
-    ax.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax))
+    ax.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax),
+                extent=[x_min, x_max, y_min, y_max])
+    ax.set_xlim(X_pos-size//2,X_pos+size//2)
+    ax.set_ylim(Y_pos-size//2,Y_pos+size//2)
     ax.invert_yaxis()
 
     # Guardar el frame de la animación
@@ -112,14 +115,14 @@ def generate_prof(row, fits_image, n_jobs=1):
     # Configurar figura y graficar resultados
     fig, axs = plt.subplots(1, 1, figsize=(2, 2), dpi=200)
     for line_values in all_profiles:
-        axs.plot(line_values, color='gray', alpha=0.7, lw=0.5)
+        axs.plot(np.linspace(X_pos-size//2, X_pos+size//2, 100), line_values, color='gray', alpha=0.7, lw=0.5)
     
     # Calcular perfil promedio
     mean_profile = np.mean(all_profiles, axis=0)
-    axs.plot(mean_profile, color='red', lw=0.5, label='Promedio')
+    axs.plot(np.linspace(X_pos-size//2, X_pos+size//2, 100), mean_profile, color='red', lw=0.5, label='Promedio')
     y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
     axs.set_ylim(y_min_plot, y_max_plot * 1.3)
-    axs.set_xlim(0, 100)
+    axs.set_xlim(X_pos-size//2, X_pos+size//2)
     plt.tight_layout()
 
     # Generar GIF
@@ -361,6 +364,272 @@ def generate_rotation_animation(row, fits_image, n_jobs=1):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
+def psf_preview(image_data, n_jobs=1, dpi=200):
+    radius = ((image_data.shape[0] - 1) / 2 - 1) / 2
+
+    # Extraer el recorte de la imagen FITS
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.0001
+    vmin, vmax = np.percentile(image_data, [2, 98])
+    # image_data = np.log10(image_data)
+
+    # Crear la figura para la animación
+    fig, ax = plt.subplots(figsize=(4,4), dpi=dpi)
+    # vmin, vmax = np.percentile(image_data, [5, 95])
+    ax.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax),
+                extent=[-radius, radius, -radius, radius])
+    ax.set_xlim(-radius, radius)
+    ax.set_ylim(-radius, radius)
+    ax.set_xlabel("Pixel")
+    ax.set_ylabel("Pixel")
+    ax.invert_yaxis()
+
+    # Guardar el frame de la animación
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+
+    # Convertir el frame a GIF (solo un frame por ahora)
+    frames = [imageio.imread(buf)]  # Solo un frame ya que no estamos animando más
+
+    # Convertir los frames a GIF con loop infinito
+    gif_buffer = BytesIO()
+    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)  # loop=0 para repetir
+    gif_buffer.seek(0)
+
+    plt.close(fig)
+
+    return base64.b64encode(gif_buffer.getvalue()).decode()
+
+
+def generate_psf_profile(image_data, n_jobs=1):
+    size = image_data.shape[0]
+    radius = ((size - 1) / 2 - 1) / 2
+
+    # Coordenadas de la posición (X, Y) de la fuente
+    X_pos = float(size//2)
+    Y_pos = float(size//2)
+
+    # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
+    x_min = 0
+    x_max = size
+    y_min = 0
+    y_max = size
+
+    # Extraer el recorte de la imagen FITS
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.00001
+    vmin, vmax = np.percentile(image_data, [5, 95])
+    image_data = np.log10(image_data)
+    image_data[~np.isfinite(image_data)] = vmin 
+
+    img_width, img_height = 300, 300  # Tamaño fijo para todas las imágenes de la animación
+
+    angles = np.linspace(0, 180, num=90)  # 30 ángulos
+    
+    # Función para procesar cada ángulo en paralelo
+    def process_angle(angle):
+        theta = np.deg2rad(angle)
+        length = size // 2
+        x1, y1 = X_pos + length * np.cos(theta), Y_pos + length * np.sin(theta) 
+        x2, y2 = X_pos - length * np.cos(theta), Y_pos - length * np.sin(theta)
+        
+        num_points = 150
+        x_vals = np.linspace(x1, x2, num_points)
+        y_vals = np.linspace(y1, y2, num_points)
+        
+        line_values = map_coordinates(image_data, [y_vals - y_min, x_vals - x_min], order=1, mode='nearest')
+        return line_values[25:125]
+        # # Alineación por máximo central
+        # N = len(line_values)
+        # center_mask = N // 2
+        # start_mask = center_mask - 10
+        # end_mask = start_mask + 20
+        # mask = line_values[start_mask:end_mask]
+        # max_mask = np.argmax(mask)
+        # indx_max = start_mask + max_mask
+        # shift = center_mask - indx_max
+        # return np.roll(line_values, shift)[25:125]
+
+    # Procesamiento paralelo con ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=os.cpu_count() if n_jobs==-1 else n_jobs) as executor:
+        all_profiles = list(executor.map(process_angle, angles))
+
+    # Configurar figura y graficar resultados
+    fig, axs = plt.subplots(figsize=(4,4), dpi=200)
+    for line_values in all_profiles:
+        axs.plot(np.linspace(-radius, radius, 100), line_values, color='gray', alpha=0.7, lw=0.5)
+    
+    # Calcular perfil promedio
+    mean_profile = np.mean(all_profiles, axis=0)
+    axs.plot(np.linspace(-radius, radius, 100), mean_profile, color='red', lw=0.5, label='Promedio')
+    y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
+    axs.set_ylim(y_min_plot, y_max_plot * 1.3)
+    axs.set_xlim(-radius, radius)
+    axs.set_xlabel("pixel")
+    axs.set_ylabel("PSF (log)")
+    plt.tight_layout()
+
+    # Generar GIF
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    frames = [imageio.imread(buf)]
+    gif_buffer = BytesIO()
+    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)
+    gif_buffer.seek(0)
+    plt.close(fig)
+
+    return base64.b64encode(gif_buffer.getvalue()).decode()
+
+def psf_and_profile(image_data, n_jobs=1):
+    size = image_data.shape[0]
+    radius = ((size - 1) / 2 - 1) / 2
+
+    # Coordenadas de la posición (X, Y) de la fuente
+    X_pos = float(size//2)
+    Y_pos = float(size//2)
+
+    # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
+    x_min = 0
+    x_max = size
+    y_min = 0
+    y_max = size
+
+    # Extraer el recorte de la imagen FITS
+    image_data = np.nan_to_num(image_data, nan=0)
+    image_data[image_data <= 0] = 0.0001
+    vmin, vmax = np.percentile(image_data, [2, 98])
+
+    # —————— Crear figura con dos paneles ——————
+    fig, (ax_img, ax_prof) = plt.subplots(
+        nrows=1, ncols=2, figsize=(6, 3), dpi=150,
+        # sharey=True, 
+        # constrained_layout=True,
+        gridspec_kw={'wspace': 0}
+    )
+
+    # vmin, vmax = np.percentile(image_data, [5, 95])
+    ax_img.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax),
+                extent=[-radius, radius, -radius, radius])
+    ax_img.set_xlim(-radius, radius)
+    ax_img.set_ylim(-radius, radius)
+    ax_img.set_xlabel("Pixel")
+    ax_img.set_ylabel("Pixel")
+    ax_img.invert_yaxis()
+
+    image_data = np.log10(image_data)
+    image_data[~np.isfinite(image_data)] = vmin 
+
+    img_width, img_height = 300, 300  # Tamaño fijo para todas las imágenes de la animación
+
+    angles = np.linspace(0, 180, num=90)  # 30 ángulos
+    
+    # Función para procesar cada ángulo en paralelo
+    def process_angle(angle):
+        theta = np.deg2rad(angle)
+        length = size // 2
+        x1, y1 = X_pos + length * np.cos(theta), Y_pos + length * np.sin(theta) 
+        x2, y2 = X_pos - length * np.cos(theta), Y_pos - length * np.sin(theta)
+        
+        num_points = 150
+        x_vals = np.linspace(x1, x2, num_points)
+        y_vals = np.linspace(y1, y2, num_points)
+        
+        line_values = map_coordinates(image_data, [y_vals - y_min, x_vals - x_min], order=1, mode='nearest')
+        return line_values
+        # # Alineación por máximo central
+        # N = len(line_values)
+        # center_mask = N // 2
+        # start_mask = center_mask - 10
+        # end_mask = start_mask + 20
+        # mask = line_values[start_mask:end_mask]
+        # max_mask = np.argmax(mask)
+        # indx_max = start_mask + max_mask
+        # shift = center_mask - indx_max
+        # return np.roll(line_values, shift)[25:125]
+
+    # Procesamiento paralelo con ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=os.cpu_count() if n_jobs==-1 else n_jobs) as executor:
+        all_profiles = list(executor.map(process_angle, angles))
+
+    # Configurar figura y graficar resultados
+    for line_values in all_profiles:
+        ax_prof.plot(np.linspace(-radius, radius, 150), line_values, color='gray', alpha=0.7, lw=0.5)
+    
+    # Calcular perfil promedio
+    mean_profile = np.mean(all_profiles, axis=0)
+    ax_prof.plot(np.linspace(-radius, radius, 150), mean_profile, color='red', lw=0.5, label='Promedio')
+    y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
+    ax_prof.set_ylim(y_min_plot, y_max_plot * 1.3)
+    ax_prof.set_xlim(-radius, radius)
+    ax_prof.set_xlabel("Pixel")
+    ax_prof.yaxis.set_ticklabels([])
+    ax_prof.tick_params(direction='in')
+    # ax_prof.set_ylabel("PSF (log)")
+    # plt.tight_layout()
+
+    # Generar GIF
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    frames = [imageio.imread(buf)]
+    gif_buffer = BytesIO()
+    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)
+    gif_buffer.seek(0)
+    plt.close(fig)
+
+    return base64.b64encode(gif_buffer.getvalue()).decode()
+
+def render_allstar_plots(df, dpi=100):
+    """
+    Dado un dict con columnas MAG, merr, chi, sharpness, devuelve
+    un GIF (o PNG) en base64 con 3 paneles: chi vs MAG, sharpness vs MAG,
+    merr vs MAG.
+    """
+    # Para mantener consistencia con tus filtros:
+    sel = df[(df.merr < 0.13) & (df.chi < 2) & (df.sharpness.between(-1,1))]
+    no_sel = df
+
+    # Creamos figura de 3 paneles
+    fig, axes = plt.subplots(1, 3, figsize=(9, 3), dpi=dpi, tight_layout=True)
+
+    # Panel 1: chi² vs MAG
+    ax = axes[0]
+    ax.plot(no_sel.MAG, no_sel.chi,       marker='+', linestyle='None', alpha=0.4)
+    ax.plot(sel.MAG,    sel.chi,          marker='+', linestyle='None', color='r')
+    ax.set_xlabel('MAG'); ax.set_ylabel(r'$\chi^2$')
+    ax.set_xlim(11, 22); ax.set_ylim(0, 7)
+    ax.grid(True)
+
+    # Panel 2: sharpness vs MAG
+    ax = axes[1]
+    ax.plot(no_sel.MAG, no_sel.sharpness, marker='+', linestyle='None', alpha=0.4)
+    ax.plot(sel.MAG,    sel.sharpness,    marker='+', linestyle='None', color='r')
+    ax.set_xlabel('MAG'); ax.set_ylabel('Sharpness')
+    ax.set_xlim(11, 22); ax.set_ylim(-4, 4)
+    ax.grid(True)
+
+    # Panel 3: merr vs MAG
+    ax = axes[2]
+    ax.plot(no_sel.MAG, no_sel.merr,      marker='+', linestyle='None', alpha=0.4)
+    ax.plot(sel.MAG,    sel.merr,         marker='+', linestyle='None', color='r')
+    ax.set_xlabel('MAG'); ax.set_ylabel(r'$MAG_{err}$')
+    ax.set_xlim(11, 22); ax.set_ylim(0, 0.5)
+    ax.grid(True)
+
+    # Guardar en buffer como GIF de un solo frame
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    frame = imageio.imread(buf)
+
+    gif_buf = BytesIO()
+    imageio.mimsave(gif_buf, [frame], format='gif', duration=0.1, loop=0)
+    gif_buf.seek(0)
+    plt.close(fig)
+
+    return base64.b64encode(gif_buf.getvalue()).decode()
 
 
 # def gaussian_2d(xy, A, x0, y0, sigma_x, sigma_y, theta, offset):

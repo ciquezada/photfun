@@ -11,11 +11,12 @@ from astropy.table import Table as astroTable
 from urllib.parse import urlparse
 from ..misc_tools import move_file_noreplace, SAMPclient
 from ..photfun_classes import PhotFun
-from .gui_custom import (nav_table_sideview_server, nav_panel_IMAGE_server, 
-                                            nav_panel_TABLE_server, nav_panel_DAOPHOT_server, 
-                                            nav_panel_SELECTION_server, nav_panel_PHOTCUBE_server,
-                                            nav_panel_EXPORT_server, nav_panel_LOGS_server,
-                                            nav_panel_PIPELINES_server)
+from .gui_custom import (nav_table_sideview_server, 
+                            nav_panel_IMAGE_server, nav_panel_TABLE_server,
+                            nav_panel_PSF_server, nav_panel_DAOPHOT_server, 
+                            nav_panel_SELECTION_server, nav_panel_PHOTCUBE_server,
+                            nav_panel_EXPORT_server, nav_panel_LOGS_server,
+                            nav_panel_PIPELINES_server, nav_panel_GRIDSEARCH_server)
 
 app_dir = Path(__file__).parent
 
@@ -27,14 +28,16 @@ def server(input, output, session):
 
     # Reactivos de modulos
     nav_table_sideview_update, fits_df, tables_df, psf_df = nav_table_sideview_server("nav_table_sideview", photfun_client, samp_client)
-    _ = nav_panel_IMAGE_server("nav_panel_IMAGE", photfun_client, samp_client, nav_table_sideview_update, fits_df)
-    _ = nav_panel_TABLE_server("nav_panel_TABLE", photfun_client, samp_client, nav_table_sideview_update, tables_df)
+    _ = nav_panel_IMAGE_server("nav_panel_IMAGE", photfun_client, samp_client, nav_table_sideview_update, fits_df, input.tabs_main)
+    _ = nav_panel_TABLE_server("nav_panel_TABLE", photfun_client, samp_client, nav_table_sideview_update, tables_df, input.tabs_main)
+    _ = nav_panel_PSF_server("nav_panel_PSF", photfun_client, nav_table_sideview_update, psf_df, input.tabs_main)
     _ = nav_panel_DAOPHOT_server("nav_panel_DAOPHOT", photfun_client, nav_table_sideview_update, fits_df, tables_df, input.tabs_main)
     _ = nav_panel_SELECTION_server("nav_panel_SELECTION", photfun_client, nav_table_sideview_update, fits_df, tables_df)
     _ = nav_panel_PHOTCUBE_server("nav_panel_PHOTCUBE", photfun_client, samp_client, nav_table_sideview_update, input.tabs_main)
     _ = nav_panel_EXPORT_server("nav_panel_EXPORT", photfun_client, input.tabs_main)
     _ = nav_panel_LOGS_server("nav_panel_LOGS", photfun_client)
     _ = nav_panel_PIPELINES_server("nav_panel_PIPELINES", photfun_client, nav_table_sideview_update, fits_df, tables_df, input.tabs_main)
+    _ = nav_panel_GRIDSEARCH_server("nav_panel_GRIDSEARCH", photfun_client, nav_table_sideview_update, fits_df, input.tabs_main)
 
     nav_table_sideview_update()
 

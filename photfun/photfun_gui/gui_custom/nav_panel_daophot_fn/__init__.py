@@ -9,3 +9,4 @@ from .nav_panel_CREATE_MASTER import nav_panel_CREATE_MASTER_ui, nav_panel_CREAT
 from .nav_panel_opt_DAOPHOT import nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server
 from .nav_panel_opt_PHOTO import nav_panel_opt_PHOTO_ui, nav_panel_opt_PHOTO_server
 from .nav_panel_opt_ALLSTAR import nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server
+from .nav_panel_opt_LOADOPT import nav_panel_opt_LOADOPT_ui, nav_panel_opt_LOADOPT_server

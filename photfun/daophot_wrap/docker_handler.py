@@ -1,10 +1,13 @@
 import os
-from subprocess import Popen, PIPE, STDOUT
+import subprocess
 from pathlib import Path
 import threading
 import psutil
 from collections import deque
 import uuid
+import signal
+from contextlib import contextmanager
+import time
 try:
     import docker
     HAS_DOCKER = True
@@ -12,38 +15,41 @@ except ImportError:
     HAS_DOCKER = False
 
 
-def run_proc(cmd, workdir, max_repeats=20, verbose=False):
-    process = Popen(
+def run_proc(cmd, workdir, timeout=None, max_repeats=20, verbose=False):
+    proc = subprocess.Popen(
         cmd, shell=True, cwd=workdir,
-        stdout=PIPE, stderr=STDOUT, text=True
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
     )
-
     lines = deque(maxlen=max_repeats)
-    killed_due_to_repeats = False
+    killed_loop = False
 
     def monitor():
-        nonlocal killed_due_to_repeats
-        for line in iter(process.stdout.readline, ''):
-             # Muestra en consola
+        nonlocal killed_loop
+        for line in iter(proc.stdout.readline, ''):
             lines.append(line.strip())
-            if len(lines) == max_repeats and len(set(lines)) == 1:
-                process.kill()
-                killed_due_to_repeats = True
+            if len(lines) == max_repeats and len(set(lines)) <= 2:
+                proc.kill()
+                killed_loop = True
                 break
 
-    monitor_thread = threading.Thread(target=monitor)
+    monitor_thread = threading.Thread(target=monitor, daemon=True)
     monitor_thread.start()
-    process.wait()
-    monitor_thread.join()
 
-    if killed_due_to_repeats:
-        raise RuntimeError(f"DAOPHOT error loop detected (exit code 137)")
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        raise RuntimeError(f"Timeout after {timeout} s")  # o el que prefieras
+    finally:
+        monitor_thread.join()
 
-    if process.returncode != 0:
-        raise RuntimeError(f"DAOPHOT error (exit code {process.returncode})")
+    if killed_loop:
+        raise RuntimeError("Error: loop detected in DAOPHOT")
+    if proc.returncode != 0:
+        raise RuntimeError(f"Error DAOPHOT (exit code {proc.returncode})")
 
-    return process.returncode
-
+    return proc.returncode
 
 def init_docker(working_dir, n_proc=1, prev=[False], mem_fraction=0.4, force_docker=False):
     n_proc = os.cpu_count() if n_proc==-1 else n_proc
@@ -110,24 +116,81 @@ def init_docker(working_dir, n_proc=1, prev=[False], mem_fraction=0.4, force_doc
     return container_names
 
 def docker_run(container_name):
-    def docker_runner(cmd, workdir, verbose=False):
+    # def docker_runner(cmd, workdir, timeout=None, verbose=False):
+    #     # Ejecutar contenedor
+    #     docker_client = docker.from_env()
+    #     container = docker_client.containers.get(container_name)
+    #     # if container.status != 'running':
+    #     #     container.start()
+
+    #     exec_res = container.exec_run(cmd=cmd, workdir=f"/workdir/{Path(workdir).as_posix()}")
+    
+    #     # stdout, stderr = exec_res.output
+    #     # if stdout:
+    #     #     print("[STDOUT]\n", stdout.decode())
+    #     # if stderr:
+    #     #     print("[STDERR]\n", stderr.decode())
+    #     if exec_res.exit_code == 137:
+    #         raise MemoryError("DAOPHOT error OOM-killed (exit code 137)")
+    #     elif exec_res.exit_code != 0:
+    #         raise RuntimeError(f"DAOPHOT error (exit code {exec_res.exit_code})")
+    def docker_runner(cmd, workdir, timeout=None, max_repeats=20, verbose=False):
         # Ejecutar contenedor
         docker_client = docker.from_env()
         container = docker_client.containers.get(container_name)
         # if container.status != 'running':
         #     container.start()
 
-        exec_res = container.exec_run(cmd=cmd, workdir=f"/workdir/{Path(workdir).as_posix()}")
-    
-        # stdout, stderr = exec_res.output
-        # if stdout:
-        #     print("[STDOUT]\n", stdout.decode())
-        # if stderr:
-        #     print("[STDERR]\n", stderr.decode())
-        if exec_res.exit_code == 137:
-            raise MemoryError("DAOPHOT error OOM-killed (exit code 137)")
-        elif exec_res.exit_code != 0:
-            raise RuntimeError(f"DAOPHOT error (exit code {exec_res.exit_code})")
+        lines = deque(maxlen=max_repeats)
+        killed_loop = False
+        start = time.time()
+
+        # Creamos el exec con workdir
+        exec_id = docker_client.api.exec_create(
+            container.id,
+            cmd=cmd,
+            workdir=f"/workdir/{workdir}",
+            stdout=True, stderr=True
+        )['Id']  
+
+        def monitor():
+            nonlocal killed_loop
+            stream = docker_client.api.exec_start(exec_id, stream=True)
+            for raw in stream:
+                text = raw.decode(errors="ignore")
+                for line in text.splitlines():
+                    if verbose:
+                        print(line)
+                    lines.append(line)
+                    # Detección de bucle
+                    if len(lines) == max_repeats and len(set(lines)) <= 2:
+                        container.kill()
+                        killed_loop = True
+                        return
+                    # Chequeo de timeout
+                    if timeout and (time.time() - start) > timeout:
+                        container.kill()
+                        raise RuntimeError(f"Timeout after {timeout}s")
+
+        # Lanzamos monitor en hilo
+        th = threading.Thread(target=monitor, daemon=True)
+        th.start()
+        th.join(timeout)
+        if th.is_alive():
+            container.kill()
+            raise RuntimeError(f"Timeout after {timeout}s")
+
+        # Inspeccionamos el exit code
+        exit_code = docker_client.api.exec_inspect(exec_id)['ExitCode'] 
+
+        if killed_loop:
+            raise RuntimeError("Loop detected (exit code 137)")
+        if exit_code == 137:
+            raise RuntimeError("OOM killed (exit code 137)")
+        if exit_code != 0:
+            raise RuntimeError(f"Error (exit code {exit_code})")
+
+        return exit_code
 
     return docker_runner
 

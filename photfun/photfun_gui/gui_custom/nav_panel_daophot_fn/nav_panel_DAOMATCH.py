@@ -19,12 +19,14 @@ def nav_panel_DAOMATCH_server(input, output, session, photfun_client, nav_table_
                             for obj in photfun_client.tables 
                             if obj.file_type in {".als", ".ap", ".alf"}
                             }
-        ui.update_select("table_master_select", choices=table_master_choices)
+        prev_selected_master_table = str(selected_master_table().id) if selected_master_table() else None
+        ui.update_select("table_master_select", choices=table_master_choices, selected=prev_selected_master_table)
         table_slave_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" 
                             for obj in photfun_client.tables 
                             if obj.file_type in {".als", ".ap", ".alf"}
                             }
-        ui.update_select("table_slave_select", choices=table_slave_choices)
+        prev_selected_slave_table = str(selected_slave_table().id) if selected_slave_table() else None
+        ui.update_select("table_slave_select", choices=table_slave_choices, selected=prev_selected_slave_table)
 
     # Cargar opciones de FITS en el select_input
     @reactive.Effect
@@ -71,4 +73,4 @@ def nav_panel_DAOMATCH_server(input, output, session, photfun_client, nav_table_
         nav_table_sideview_update(fits=False, psf=False)
         update_select()
 
-    return
+    return {}

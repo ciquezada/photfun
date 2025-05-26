@@ -16,18 +16,22 @@ def nav_panel_SUB_ui():
     )
 
 @module.server
-def nav_panel_SUB_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot, navselected_fits):
+def nav_panel_SUB_server(input, output, session, photfun_client, nav_table_sideview_update, input_tabs_main, input_tabs_daophot):
 
     def update_select():
         fits_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.fits_files}
-        ui.update_select("fits_select", choices=fits_choices, selected=str(navselected_fits().id) if navselected_fits() else None)
+        prev_selected_fits = str(selected_fits().id) if selected_fits() else None
+        ui.update_select("fits_select", choices=fits_choices, selected=prev_selected_fits)
         table_psf_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.psf_files}
-        ui.update_select("table_psf_select", choices=table_psf_choices)
+        prev_selected_psf_table = str(selected_psf_table().id) if selected_psf_table() else None
+        ui.update_select("table_psf_select", choices=table_psf_choices, selected=prev_selected_psf_table)
         table_nei_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.tables}
-        ui.update_select("table_nei_select", choices=table_nei_choices)
+        prev_selected_nei_table = str(selected_nei_table().id) if selected_nei_table() else None
+        ui.update_select("table_nei_select", choices=table_nei_choices, selected=prev_selected_nei_table)
         table_lst_choices = {"":"No exception"}
         table_lst_choices.update({str(obj.id): f"[{obj.id}] {obj.alias}" for obj in photfun_client.tables})
-        ui.update_select("table_lst_select", choices=table_lst_choices)
+        prev_selected_lst_table = str(selected_lst_table().id) if selected_lst_table() else None
+        ui.update_select("table_lst_select", choices=table_lst_choices, selected=prev_selected_lst_table)
 
     # Cargar opciones de FITS en el select_input
     @reactive.Effect
@@ -90,4 +94,4 @@ def nav_panel_SUB_server(input, output, session, photfun_client, nav_table_sidev
         nav_table_sideview_update(tables=False, psf=False)
         update_select()
 
-    return
+    return {"selected_fits":selected_fits ,"selected_table":selected_lst_table}

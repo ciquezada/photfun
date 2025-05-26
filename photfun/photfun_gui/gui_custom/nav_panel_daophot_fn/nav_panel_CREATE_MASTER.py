@@ -19,12 +19,14 @@ def nav_panel_CREATE_MASTER_server(input, output, session, photfun_client, nav_t
                             for obj in photfun_client.tables 
                             if obj.file_type not in {".mch"}
                             }
-        ui.update_select("table_master_select", choices=table_master_choices)
+        prev_selected_master_table = str(selected_master_table().id) if selected_master_table() else None                             
+        ui.update_select("table_master_select", choices=table_master_choices, selected=prev_selected_master_table)
         table_mch_choices = {str(obj.id): f"[{obj.id}] {obj.alias}" 
                             for obj in photfun_client.tables 
                             if obj.file_type in {".mch"}
                             }
-        ui.update_select("table_mch_select", choices=table_mch_choices)
+        prev_selected_mch_table = str(selected_mch_table().id) if selected_mch_table() else None                             
+        ui.update_select("table_mch_select", choices=table_mch_choices, selected=prev_selected_mch_table)
 
     # Cargar opciones de FITS en el select_input
     @reactive.Effect
@@ -71,4 +73,4 @@ def nav_panel_CREATE_MASTER_server(input, output, session, photfun_client, nav_t
         nav_table_sideview_update(fits=False, psf=False)
         update_select()
 
-    return
+    return {}

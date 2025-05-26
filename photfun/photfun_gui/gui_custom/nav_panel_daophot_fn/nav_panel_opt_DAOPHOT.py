@@ -46,4 +46,4 @@ def nav_panel_opt_DAOPHOT_server(input, output, session, photfun_client, input_t
             if new_value is not None:
                 photfun_client.daophot_opt[key] = float(new_value)
     
-    return
+    return {}

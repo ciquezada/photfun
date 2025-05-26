@@ -32,8 +32,14 @@ def nav_panel_IMAGE_ui():
 
 @module.server
 def nav_panel_IMAGE_server(input, output, session, photfun_client, samp_client, 
-                            nav_table_sideview_update, fits_df):
+                            nav_table_sideview_update, fits_df, input_tabs_main):
     event_load_local_fits, input_load_local_fits  = input_local_file_server("load_local_fits", ".fits")
+
+    @reactive.Effect
+    @reactive.event(input_tabs_main)
+    def _():
+        if input_tabs_main()=="FITS":
+            update_fits_selection()
 
     # Evento al cargar archivos FITS
     @reactive.Effect
@@ -66,6 +72,9 @@ def nav_panel_IMAGE_server(input, output, session, photfun_client, samp_client,
     # Actualizar opciones del input select cuando cambia el FITS seleccionado
     @reactive.Effect
     @reactive.event(selected_fits)
+    def _():
+        update_fits_selection()
+        
     def update_fits_selection():
         fits_obj = selected_fits()
         if not fits_obj or not fits_obj.path:

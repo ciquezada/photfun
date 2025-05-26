@@ -6,7 +6,7 @@ from .docker_handler import run_proc, docker_run
 
 
 def daomatch(in_master_als, in_path_list, out_mch, verbose=True, 
-                	use_docker=None, working_dir=".") -> [".mch"]: 
+                	use_docker=None, working_dir=".", timeout=None) -> [".mch"]: 
     try:
         # Copiar archivos necesarios a la carpeta temporal
         filename = os.path.splitext(os.path.basename(in_master_als))[0]
@@ -44,11 +44,11 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
             runner = docker_run(use_docker)
             joined_cmds = '\n'.join(cmd_list[1:])
             cmd = "sh -c 'printf \"%s\\n\" \""+f"{joined_cmds}"+"\" | daomatch >> daomatch.log'"
-            runner(cmd, os.path.relpath(temp_dir, start=working_dir))
+            runner(cmd, os.path.relpath(temp_dir, start=working_dir), timeout)
         else:
             runner = run_proc
             cmd = cmd
-            runner(cmd, temp_dir)
+            runner(cmd, temp_dir, timeout)
 
         # Mover el archivo de salida a la ubicación final
         move_file_noreplace(temp_log, out_log)
