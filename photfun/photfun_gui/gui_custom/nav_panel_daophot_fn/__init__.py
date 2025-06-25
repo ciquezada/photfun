@@ -5,6 +5,8 @@ from .nav_panel_PSF import nav_panel_PSF_ui, nav_panel_PSF_server
 from .nav_panel_SUB import nav_panel_SUB_ui, nav_panel_SUB_server
 from .nav_panel_ALLSTAR import nav_panel_ALLSTAR_ui, nav_panel_ALLSTAR_server
 from .nav_panel_DAOMATCH import nav_panel_DAOMATCH_ui, nav_panel_DAOMATCH_server
+from .nav_panel_DAOMASTER import nav_panel_DAOMASTER_ui, nav_panel_DAOMASTER_server
+from .nav_panel_ALLFRAME import nav_panel_ALLFRAME_ui, nav_panel_ALLFRAME_server
 from .nav_panel_CREATE_MASTER import nav_panel_CREATE_MASTER_ui, nav_panel_CREATE_MASTER_server
 from .nav_panel_opt_DAOPHOT import nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server
 from .nav_panel_opt_PHOTO import nav_panel_opt_PHOTO_ui, nav_panel_opt_PHOTO_server

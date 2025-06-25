@@ -15,6 +15,8 @@ from .nav_panel_daophot_fn import (
     nav_panel_SUB_ui, nav_panel_SUB_server,
     nav_panel_ALLSTAR_ui, nav_panel_ALLSTAR_server,
     nav_panel_DAOMATCH_ui, nav_panel_DAOMATCH_server,
+    nav_panel_DAOMASTER_ui, nav_panel_DAOMASTER_server,
+    nav_panel_ALLFRAME_ui, nav_panel_ALLFRAME_server,
     nav_panel_CREATE_MASTER_ui, nav_panel_CREATE_MASTER_server,
     nav_panel_opt_ALLSTAR_ui, nav_panel_opt_ALLSTAR_server,
     nav_panel_opt_DAOPHOT_ui, nav_panel_opt_DAOPHOT_server,
@@ -54,6 +56,8 @@ def nav_panel_DAOPHOT_ui():
                         ui.nav_panel("SUBTRACT", nav_panel_SUB_ui("nav_panel_SUB"), value="SUB"),
                         ui.nav_panel("ALLSTAR", nav_panel_ALLSTAR_ui("nav_panel_ALLSTAR"), value="ALLSTAR"),
                         ui.nav_panel("DAOMATCH", nav_panel_DAOMATCH_ui("nav_panel_DAOMATCH"), value="DAOMATCH"),
+                        ui.nav_panel("DAOMASTER", nav_panel_DAOMASTER_ui("nav_panel_DAOMASTER"), value="DAOMASTER"),
+                        ui.nav_panel("ALLFRAME", nav_panel_ALLFRAME_ui("nav_panel_ALLFRAME"), value="ALLFRAME"),
                         ui.nav_panel("MASTER", nav_panel_CREATE_MASTER_ui("nav_panel_CREATE_MASTER"), value="CREATE_MASTER"),
                         ui.nav_menu(
                             "Settings",
@@ -73,6 +77,7 @@ def nav_panel_DAOPHOT_ui():
                 # ui.input_action_button("show_plots", "Show Plots", icon=icon_svg("magnifying-glass-chart")),
             ),
             ui.output_ui("mapping_ui"),
+            ui.output_ui("preview_panel")
         )
     return m
 
@@ -92,6 +97,8 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
     panel_selection["SUB"] = nav_panel_SUB_server("nav_panel_SUB", *panel_args)
     panel_selection["ALLSTAR"] = nav_panel_ALLSTAR_server("nav_panel_ALLSTAR", *panel_args)
     panel_selection["DAOMATCH"] = nav_panel_DAOMATCH_server("nav_panel_DAOMATCH", *panel_args)
+    panel_selection["DAOMASTER"] = nav_panel_DAOMASTER_server("nav_panel_DAOMASTER", *panel_args)
+    panel_selection["ALLFRAME"] = nav_panel_ALLFRAME_server("nav_panel_ALLFRAME", *panel_args)
     panel_selection["CREATE_MASTER"] = nav_panel_CREATE_MASTER_server("nav_panel_CREATE_MASTER", *panel_args)
     panel_selection["opt_ALLSTAR"] = nav_panel_opt_ALLSTAR_server("nav_panel_opt_ALLSTAR", photfun_client, input_tabs_main, input.tabs_daophot)
     panel_selection["opt_DAOPHOT"] = nav_panel_opt_DAOPHOT_server("nav_panel_opt_DAOPHOT", photfun_client, input_tabs_main, input.tabs_daophot)
@@ -235,12 +242,6 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
 
     @render.ui
     def mapping_ui():
-        if not input.show_mapping():
-            return ui.div(style="height:16px")
-        cached = mapping_ui_cache.get()
-        if cached is not None:
-            return cached
-
         def param_row(key, label, value):
             return ui.div(
                 ui.input_checkbox(f"enable_{key}", label, value=False),
@@ -248,23 +249,31 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
                             placeholder="min, max, step", width="100%"),
                 class_="mb-4 p-3 border rounded"
             )
-
-        panel = ui.div(
-                ui.h5("Parameters to map"),
-                ui.layout_column_wrap(
-                    param_row("fw", "FWHM Range",         "3, 5, 0.5"),
-                    param_row("fi", "Fitting Radius",     "4, 6, 0.5"),
-                    param_row("ps", "PSF Radius",         "6, 11, 0.5"),
-                    param_row("is", "Inner Sky Radius",   "1, 6, 0.5"),
-                    param_row("os", "Outer Sky Radius",   "6, 12, 0.5"),
-                    # col_widths=[2,2,2,2,2],
-                    style="padding-left: 20px;"
-                ),
-                ui.input_action_button("map_btn", f"Map {input.tabs_daophot()}", icon=icon_svg("searchengin"), width="auto"),
-                ui.output_ui("preview_panel")
+            
+        if not input.show_mapping():
+            return ui.div(style="height:16px")
+        cached = mapping_ui_cache.get()
+        if cached is None:
+            mapping_ui_cache.set(
+                ui.div(
+                    ui.layout_column_wrap(
+                        param_row("fw", "FWHM Range",         "3, 5, 0.5"),
+                        param_row("fi", "Fitting Radius",     "4, 6, 0.5"),
+                        param_row("ps", "PSF Radius",         "6, 11, 0.5"),
+                        param_row("is", "Inner Sky Radius",   "1, 6, 0.5"),
+                        param_row("os", "Outer Sky Radius",   "6, 12, 0.5"),
+                        # col_widths=[2,2,2,2,2],
+                        style="padding-left: 20px;"
+                    ),
+                    ui.output_ui("preview_panel")
+                )    
             )
-        
-        mapping_ui_cache.set(panel)
+        cached = mapping_ui_cache.get()
+        panel = ui.div(
+                    ui.h5("Parameters to map"),
+                    ui.input_action_button("map_btn", f"Map {input.tabs_daophot()}", icon=icon_svg("searchengin"), width="auto"),
+                    cached,
+                )
         return panel
     
     @reactive.Effect
@@ -345,6 +354,8 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
     @render.ui
     def preview_panel():
         map_dict = plot_map_preview.get()
+        if not input.show_mapping():
+            return ui.div(style="height:16px")
         if not map_dict:
             return ui.div("No previews created", style="color: #666; height: 16px;")
 
@@ -406,8 +417,8 @@ def nav_panel_DAOPHOT_server(input, output, session, photfun_client, nav_table_s
         sizes_dict = {  "FIND": "100%",
                         "PHOT": "100%",
                         "PICK": "100%",
-                        "PSF": "50%",
+                        "PSF": "100%",
                         "ALLSTAR": "100%",
                         }
-        return ui.img(src=f"data:image/gif;base64,{img_b64}", 
+        return ui.img(src=f"data:image/png;base64,{img_b64}", 
                         width=sizes_dict[input.tabs_daophot()])

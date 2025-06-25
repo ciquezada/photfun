@@ -171,8 +171,10 @@ def nav_panel_ALLSTAR_server(input, output, session, photfun_client, nav_table_s
                 for idx, upd in enumerate(pbar_previews(updates)):
                     # key legible, por ej. "fi=4.0;ps=20.0"
                     key = ";".join(f"{k}={v:.2f}" for k, v in upd.items())
+                    if "ERROR" in out_table_obj.path[idx]:
+                        continue
                     df = out_table_obj.df(idx)           # accede al array FITS
-                    gif_b64 = render_allstar_plots(df, dpi=100)             # tu función de GIF→base64
+                    gif_b64 = render_allstar_plots(df, out_fits_obj.image(idx), dpi=100)             # tu función de GIF→base64
                     d[key] = gif_b64
             ui.notification_show(f"ALLSTAR map created\n -> [{out_table_obj.id}] {out_table_obj.alias}")
             nav_table_sideview_update(fits=False)

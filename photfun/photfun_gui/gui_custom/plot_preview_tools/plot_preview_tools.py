@@ -376,7 +376,7 @@ def psf_preview(image_data, n_jobs=1, dpi=200):
     # Crear la figura para la animación
     fig, ax = plt.subplots(figsize=(4,4), dpi=dpi)
     # vmin, vmax = np.percentile(image_data, [5, 95])
-    ax.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax),
+    ax.imshow(image_data, cmap='gray', #norm=LogNorm(vmin=vmin, vmax=vmax),
                 extent=[-radius, radius, -radius, radius])
     ax.set_xlim(-radius, radius)
     ax.set_ylim(-radius, radius)
@@ -393,9 +393,9 @@ def psf_preview(image_data, n_jobs=1, dpi=200):
     frames = [imageio.imread(buf)]  # Solo un frame ya que no estamos animando más
 
     # Convertir los frames a GIF con loop infinito
-    gif_buffer = BytesIO()
-    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)  # loop=0 para repetir
-    gif_buffer.seek(0)
+    png_buffer = BytesIO()
+    imageio.mimsave(png_buffer, frames, format="png", duration=0.05, loop=0)  # loop=0 para repetir
+    png_buffer.seek(0)
 
     plt.close(fig)
 
@@ -464,7 +464,7 @@ def generate_psf_profile(image_data, n_jobs=1):
     mean_profile = np.mean(all_profiles, axis=0)
     axs.plot(np.linspace(-radius, radius, 100), mean_profile, color='red', lw=0.5, label='Promedio')
     y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
-    axs.set_ylim(y_min_plot, y_max_plot * 1.3)
+    axs.set_ylim(0, y_max_plot * 1.3)
     axs.set_xlim(-radius, radius)
     axs.set_xlabel("pixel")
     axs.set_ylabel("PSF (log)")
@@ -475,9 +475,9 @@ def generate_psf_profile(image_data, n_jobs=1):
     plt.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
     frames = [imageio.imread(buf)]
-    gif_buffer = BytesIO()
-    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)
-    gif_buffer.seek(0)
+    png_buffer = BytesIO()
+    imageio.mimsave(png_buffer, frames, format="png", duration=0.05, loop=0)
+    png_buffer.seek(0)
     plt.close(fig)
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
@@ -510,7 +510,7 @@ def psf_and_profile(image_data, n_jobs=1):
     )
 
     # vmin, vmax = np.percentile(image_data, [5, 95])
-    ax_img.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax),
+    ax_img.imshow(image_data, cmap='gray', #norm=LogNorm(vmin=vmin, vmax=vmax),
                 extent=[-radius, radius, -radius, radius])
     ax_img.set_xlim(-radius, radius)
     ax_img.set_ylim(-radius, radius)
@@ -518,8 +518,8 @@ def psf_and_profile(image_data, n_jobs=1):
     ax_img.set_ylabel("Pixel")
     ax_img.invert_yaxis()
 
-    image_data = np.log10(image_data)
-    image_data[~np.isfinite(image_data)] = vmin 
+    # image_data = np.log10(image_data)
+    # image_data[~np.isfinite(image_data)] = vmin 
 
     img_width, img_height = 300, 300  # Tamaño fijo para todas las imágenes de la animación
 
@@ -561,7 +561,7 @@ def psf_and_profile(image_data, n_jobs=1):
     mean_profile = np.mean(all_profiles, axis=0)
     ax_prof.plot(np.linspace(-radius, radius, 150), mean_profile, color='red', lw=0.5, label='Promedio')
     y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
-    ax_prof.set_ylim(y_min_plot, y_max_plot * 1.3)
+    # ax_prof.set_ylim(0, y_max_plot * 2)
     ax_prof.set_xlim(-radius, radius)
     ax_prof.set_xlabel("Pixel")
     ax_prof.yaxis.set_ticklabels([])
@@ -574,62 +574,81 @@ def psf_and_profile(image_data, n_jobs=1):
     plt.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
     frames = [imageio.imread(buf)]
-    gif_buffer = BytesIO()
-    imageio.mimsave(gif_buffer, frames, format="gif", duration=0.05, loop=0)
-    gif_buffer.seek(0)
+    png_buffer = BytesIO()
+    imageio.mimsave(png_buffer, frames, format="png", duration=0.05, loop=0)
+    png_buffer.seek(0)
     plt.close(fig)
 
-    return base64.b64encode(gif_buffer.getvalue()).decode()
+    return base64.b64encode(png_buffer.getvalue()).decode()
 
-def render_allstar_plots(df, dpi=100):
+def render_allstar_plots(df, fits_hdu=None, dpi=100):
     """
-    Dado un dict con columnas MAG, merr, chi, sharpness, devuelve
-    un GIF (o PNG) en base64 con 3 paneles: chi vs MAG, sharpness vs MAG,
-    merr vs MAG.
+    Dado un DataFrame con columnas MAG, merr, chi, sharpness y una imagen FITS,
+    devuelve un PNG (en base64) con una grilla 2x2:
+    [chi² vs MAG | imagen FITS]
+    [sharpness vs MAG | MAGerr vs MAG]
     """
-    # Para mantener consistencia con tus filtros:
+
+    # Filtros para destacar puntos buenos
     sel = df[(df.merr < 0.13) & (df.chi < 2) & (df.sharpness.between(-1,1))]
     no_sel = df
 
-    # Creamos figura de 3 paneles
-    fig, axes = plt.subplots(1, 3, figsize=(9, 3), dpi=dpi, tight_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(9, 8), dpi=dpi, tight_layout=True)
 
     # Panel 1: chi² vs MAG
-    ax = axes[0]
-    ax.plot(no_sel.MAG, no_sel.chi,       marker='+', linestyle='None', alpha=0.4)
-    ax.plot(sel.MAG,    sel.chi,          marker='+', linestyle='None', color='r')
+    ax = axes[0, 0]
+    ax.plot(no_sel.MAG, no_sel.chi, marker='+', linestyle='None', alpha=0.4)
+    ax.plot(sel.MAG,    sel.chi,    marker='+', linestyle='None', color='r')
     ax.set_xlabel('MAG'); ax.set_ylabel(r'$\chi^2$')
-    ax.set_xlim(11, 22); ax.set_ylim(0, 7)
+    # ax.set_xlim(11, 22)
+    ax.set_ylim(0, 7)
     ax.grid(True)
 
-    # Panel 2: sharpness vs MAG
-    ax = axes[1]
+    # Panel 3: sharpness vs MAG
+    ax = axes[1, 0]
     ax.plot(no_sel.MAG, no_sel.sharpness, marker='+', linestyle='None', alpha=0.4)
     ax.plot(sel.MAG,    sel.sharpness,    marker='+', linestyle='None', color='r')
     ax.set_xlabel('MAG'); ax.set_ylabel('Sharpness')
-    ax.set_xlim(11, 22); ax.set_ylim(-4, 4)
+    # ax.set_xlim(11, 22)
+    ax.set_ylim(-4, 4)
     ax.grid(True)
 
-    # Panel 3: merr vs MAG
-    ax = axes[2]
-    ax.plot(no_sel.MAG, no_sel.merr,      marker='+', linestyle='None', alpha=0.4)
-    ax.plot(sel.MAG,    sel.merr,         marker='+', linestyle='None', color='r')
+    # Panel 4: MAGerr vs MAG
+    ax = axes[0, 1]
+    ax.plot(no_sel.MAG, no_sel.merr, marker='+', linestyle='None', alpha=0.4)
+    ax.plot(sel.MAG,    sel.merr,    marker='+', linestyle='None', color='r')
     ax.set_xlabel('MAG'); ax.set_ylabel(r'$MAG_{err}$')
-    ax.set_xlim(11, 22); ax.set_ylim(0, 0.5)
+    # ax.set_xlim(11, 22) 
+    ax.set_ylim(0, 0.5)
     ax.grid(True)
 
-    # Guardar en buffer como GIF de un solo frame
+    # Panel 2: Imagen FITS si existe
+    ax = axes[1, 1]
+    if fits_hdu is not None:
+        image_data = np.array(fits_hdu.data)
+        image_data = np.nan_to_num(image_data, nan=0.0)
+        image_data[image_data <= 0] = 0.0001
+        vmin, vmax = np.percentile(image_data, [25, 90])
+        ax.imshow(image_data, cmap='gray', norm=LogNorm(vmin=vmin, vmax=vmax))
+        ax.set_title("FITS Image")
+        ax.invert_yaxis()
+    else:
+        ax.axis('off')
+        ax.set_title("No image")
+
+    # Guardar como PNG en base64
     buf = BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight')
     buf.seek(0)
-    frame = imageio.imread(buf)
-
-    gif_buf = BytesIO()
-    imageio.mimsave(gif_buf, [frame], format='gif', duration=0.1, loop=0)
-    gif_buf.seek(0)
+    img = imageio.imread(buf)
+    
+    png_buf = BytesIO()
+    imageio.mimsave(png_buf, [img], format='png', duration=0.1, loop=0)
+    png_buf.seek(0)
     plt.close(fig)
+    
 
-    return base64.b64encode(gif_buf.getvalue()).decode()
+    return base64.b64encode(png_buf.getvalue()).decode()
 
 
 # def gaussian_2d(xy, A, x0, y0, sigma_x, sigma_y, theta, offset):

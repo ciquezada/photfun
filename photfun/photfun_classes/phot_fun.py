@@ -8,8 +8,8 @@ from .phot_fits import PhotFits
 from .phot_psf import PhotPSF
 from ..daophot_wrap.docker_handler import init_docker, docker_stop_async
 from ..daophot_wrap import (find, phot, pick, create_psf, 
-                        sub_fits, allstar, daomatch, 
-                        create_master)
+                        sub_fits, allstar, daomatch, daomaster, allframe,
+                        create_master, psf_preview)
 from ..daophot_opt import opt_daophot_dict, opt_photo_dict, opt_allstar_dict
 from ..daophot_opt import opt_daophot_labels, opt_photo_labels, opt_allstar_labels
 from ..misc_tools import temp_mkdir, copy_file_noreplace
@@ -156,16 +156,34 @@ class PhotFun:
         # Guardar los diccionarios como archivos de texto
         self._save_opt_files()
 
-        # Parametros de find
+        # --- FIND parameters ---
         self.find_sum = 1
         self.find_average = 1
 
-        # Parametros de pick
+        # --- PICK parameters ---
         self.pick_max_stars = 200
         self.pick_min_mag = 20
 
-        # Parametros de allstar
+        # --- ALLSTAR parameters ---
         self.allstar_recentering = True
+
+        # --- DAOMASTER parameters ---
+        self.new_id = False
+        self.out_mag = True
+        self.out_cor = False
+        self.out_raw = False
+        self.out_mch = False
+        self.out_tfr = False
+        self.out_coo = False
+        self.out_mtr = False
+
+        self.minimum_frames = 1
+        self.minimum_fraction = 0
+        self.enough_frames = 1
+
+        self.max_sig = 99
+        self.degrees_freedom = 4
+        self.critical_radius = 6
 
         # intiaite Docker (if it can)
         self._force_docker = False
@@ -204,6 +222,7 @@ class PhotFun:
         psf_file = PhotPSF(path)
         psf_file.id = next(self.id_counter)
         self.psf_files.append(psf_file)
+        # self.psf_preview(psf_file.id, pbar=tqdm)
         if self.daophot_verbose:
             print(f"  -> {psf_file.alias}")
         return psf_file
@@ -510,12 +529,101 @@ class PhotFun:
         output_dir = self.working_dir
         out_mch = os.path.join(output_dir, f"{table_name}_{table_list_name}.mch")
         final_out_mch = daomatch(table_obj.path[0], table_list_obj.path, out_mch, 
-                                    self.daophot_verbose if len(input_args)<4 else False,
-                                    self.self.docker_container[0], 
+                                    self.daophot_verbose if len(table_list_obj.path)<4 else False,
+                                    self.docker_container[0], 
                                     self.working_dir,
                                     30 + self.daophot_timeout if self.daophot_timeout else None)
         out_mch_table = self.add_table(final_out_mch)
         return out_mch_table
+
+    def daomaster(self, master_id, mch_id, id_table_list):
+        mch_obj = next(filter(lambda f: f.id == mch_id, self.tables), None)
+        master_obj = next(filter(lambda f: f.id == master_id, self.tables), None)
+        table_list_obj = next(filter(lambda f: f.id == id_table_list, self.tables), None)
+
+        if not mch_obj:
+            raise ValueError(f"No se encontró la tabla maestra con ID {mch_id}")
+        if not table_list_obj:
+            raise ValueError(f"No se encontró la tabla con ID {id_table_list}")
+        if master_obj:
+            in_path_list = master_id.path + table_list_obj.path
+        else:
+            in_path_list = table_list_obj.path
+        if master_obj == table_list_obj:
+            raise ValueError("No pueden ser iguales la tabla master y la de sub targets")
+
+        out_prefix = f"{os.path.basename(mch_obj.path[0]).replace('.mch', '')}"  # vacío como se indica
+
+        # Preparar valores desde atributos del objeto
+        min_min_fr = f"{self.minimum_frames},{self.minimum_fraction},{self.enough_frames}"
+
+        # Llamar a daomaster
+        result_dict = daomaster(
+            in_mch=mch_obj.path[0],
+            in_path_list=in_path_list,
+            out_dir=self.working_dir,
+            out_prefix=out_prefix,
+            new_id=self.new_id,
+            out_mag=self.out_mag,
+            out_cor=self.out_cor,
+            out_raw=self.out_raw,
+            out_mch=self.out_mch,
+            out_tfr=self.out_tfr,
+            out_coo=self.out_coo,
+            out_mtr=self.out_mtr,
+            min_min_fr=min_min_fr,
+            max_sig=str(self.max_sig),
+            deg_free=str(self.degrees_freedom),
+            crit_rad=str(self.critical_radius),
+            verbose=self.daophot_verbose if len(table_list_obj.path) < 4 else False,
+            use_docker=self.docker_container[0],
+            working_dir=self.working_dir,
+            timeout=30 + self.daophot_timeout if self.daophot_timeout else None,
+        )
+
+        # Agregar cada archivo final como tabla si aplica (solo los .mag, .cor, .raw, .mch, .tfr)
+        output_keys = ["out_mag", "out_cor", "out_raw", "out_mch", "out_tfr", "out_coo", "out_mtr"]
+        out_tables = []
+        for key in output_keys:
+            if key in result_dict:
+                out_tables.append(self.add_table(result_dict[key]))
+
+        return out_tables
+
+    def allframe(self, fits_id, psf_id, als_id, mch_id, master_id):
+        # Obtener listas de entrada
+        fits_obj = next(filter(lambda f: f.id == fits_id, self.fits_files), None)
+        psf_obj = next(filter(lambda f: f.id == psf_id, self.psf_files), None)
+        als_obj = next(filter(lambda t: t.id == als_id, self.tables), None)
+        mch_obj = next(filter(lambda t: t.id == mch_id, self.tables), None)
+        master_obj = next(filter(lambda t: t.id == master_id, self.tables), None)
+
+        if not all([fits_obj, psf_obj, als_obj, mch_obj, master_obj]):
+            raise ValueError("Uno o más IDs no fueron encontrados en las listas del objeto.")
+
+        # Ejecutar ALLFRAME
+        alf_list, fits_list, tfr_file, nmg_file = allframe(
+            in_fits=fits_obj.path,
+            in_psf=psf_obj.path,
+            in_als=als_obj.path,
+            in_mch=mch_obj.path[0],
+            in_master=master_obj.path[0],
+            out_prefix="",
+            out_dir=self.working_dir,
+            verbose=self.daophot_verbose,
+            use_docker=self.docker_container[0] if self.docker_container else None,
+            working_dir=self.working_dir,
+            timeout=None
+        )
+
+        # Registrar resultados
+        out_alf = self.add_table(alf_list)
+        out_fits = self.add_fits(fits_list)
+        out_tfr = self.add_table(tfr_file)
+        out_nmg = self.add_table(nmg_file)
+
+        return out_alf, out_fits, out_tfr, out_nmg
+
 
     def create_master(self, master_id, mch_id):
         master_obj = next(filter(lambda f: f.id==master_id, self.tables), None)
@@ -530,6 +638,46 @@ class PhotFun:
         						output_dir)
         out_obj_table = self.add_table(final_out_path_list)
         return out_obj_table
+
+    def psf_preview(self, psf_id, pbar=iter):
+        psf_obj = next(filter(lambda f: f.id == psf_id, self.psf_files), None)
+
+        if not psf_obj:
+            raise ValueError(f"PSF not found: ID {psf_id}")
+        if psf_obj.preview_path:
+            raise ValueError(f"Preview is already created {psf_id}")
+        filename = os.path.splitext(os.path.basename(psf_obj.path[0]))[0]
+        temp_dir = os.path.abspath(temp_mkdir(os.path.join(self.working_dir, f"{filename}_PSF_PNG_0")))
+        
+
+        base_opt = self._save_opt_files(overwrite=True)
+        opt_paths = [base_opt]
+
+        input_args = pair_args(psf_obj.path, 
+                                err_msg="La cantidad de archivos FITS/PSF/AP no coincide.")
+        # Preparar la lista de argumentos para cada tarea
+        docker_cycle = cycle(self.docker_container)
+        arg_list = []
+        for opt_path in opt_paths:
+            arg_list += [
+                    (psf_path,
+                    opt_path['daophot.opt'],
+                    os.path.join(temp_dir, f"{os.path.basename(psf_path).replace('.psf', '.png')}"),
+                    self.daophot_verbose if len(input_args)<4 else False, # verbose=False
+                    next(docker_cycle),
+                    self.working_dir,
+                    15 + self.daophot_timeout if self.daophot_timeout else None
+                    )  
+                    for psf_path,  in input_args
+                ]
+        # Crear un nuevo event loop para el thread
+        asyncio.set_event_loop(LOOP)
+        with parallel_backend('loky'):  # Usar loky para mejor compatibilidad
+            final_out = Parallel(n_jobs=min(self.n_jobs, len(arg_list)), verbose=0)(
+                                                delayed_wrap(psf_preview)(*args) for args in pbar(arg_list)
+                                            )
+        psf_obj.preview_path = final_out
+        return final_out
 
     def _save_opt_files(self, overwrite=True):
         opt_files = {

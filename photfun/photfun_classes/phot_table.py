@@ -30,8 +30,16 @@ class PhotTable(PhotFile):
             return self._load_ap(indx)
         elif self.file_type == ".als":
             return self._load_als(indx)
+        elif self.file_type == ".mag":
+            return self._load_mag(indx)
+        elif self.file_type == ".nmg":
+            return self._load_nmg(indx)
+        elif self.file_type == ".mtr":
+            return self._load_mtr(indx)
         elif self.file_type == ".mch":
             return self._load_mch(indx)
+        elif self.file_type in [".cor", ".raw", ".tfr"]:
+            return pd.DataFrame()
         else:
             return ascii.read(self.path[indx]).to_pandas()
 
@@ -62,6 +70,51 @@ class PhotTable(PhotFile):
         # Cargar datos
         col_names = ['ID', 'X', 'Y', "MAG", "merr", "msky", "niter", "chi", "sharpness"]
         df = pd.read_csv(self.path[indx], sep='\s+', skiprows=3, names=col_names, usecols=range(9), dtype={"ID": int})
+        df.iloc[:, 1:-1] = df.iloc[:, 1:-1].astype(float)  # Convertir todas las columnas excepto ID y niter
+        return df
+
+    def _load_mtr(self, indx):
+        with open(self.path[indx], "r") as f:
+            lines = f.readlines()
+        
+        # Extraer header
+        header_keys = lines[0].split()
+        header_values = lines[1].split()
+        self.header = {key: val for key, val in zip(header_keys, header_values)}
+        
+        # Cargar datos
+        col_names = ['ID', 'X', 'Y', "MAG", "merr", "msky", "niter", "chi", "sharpness", "oldid", "off1", "off2", "off3", "off4"]
+        df = pd.read_csv(self.path[indx], sep='\s+', skiprows=3, names=col_names, usecols=range(14), dtype={"ID": int})
+        df.iloc[:, 1:-1] = df.iloc[:, 1:-1].astype(float)  # Convertir todas las columnas excepto ID y niter
+        return df
+
+    def _load_nmg(self, indx):
+        with open(self.path[indx], "r") as f:
+            lines = f.readlines()
+        
+        # Extraer header
+        header_keys = lines[0].split()
+        header_values = lines[1].split()
+        self.header = {key: val for key, val in zip(header_keys, header_values)}
+        
+        # Cargar datos
+        col_names = ['ID', 'X', 'Y', "MAG", "merr", "nconv", "niter", "chi", "sharpness"]
+        df = pd.read_csv(self.path[indx], sep='\s+', skiprows=3, names=col_names, usecols=range(9), dtype={"ID": int})
+        df.iloc[:, 1:-1] = df.iloc[:, 1:-1].astype(float)  # Convertir todas las columnas excepto ID y niter
+        return df
+
+    def _load_mag(self, indx):
+        with open(self.path[indx], "r") as f:
+            lines = f.readlines()
+        
+        # Extraer header
+        header_keys = lines[0].split()
+        header_values = lines[1].split()
+        self.header = {key: val for key, val in zip(header_keys, header_values)}
+        
+        # Cargar datos
+        col_names = ['ID', 'X', 'Y', "MAG", "merr", "msky", "niter", "chi", "sharpness", "pier", "perror"]
+        df = pd.read_csv(self.path[indx], sep='\s+', skiprows=3, names=col_names, usecols=range(11), dtype={"ID": int})
         df.iloc[:, 1:-1] = df.iloc[:, 1:-1].astype(float)  # Convertir todas las columnas excepto ID y niter
         return df
 

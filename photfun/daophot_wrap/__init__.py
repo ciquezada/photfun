@@ -5,4 +5,7 @@ from .create_psf import create_psf
 from .sub_fits import sub_fits
 from .allstar import allstar
 from .daomatch import daomatch
+from .daomaster import daomaster
+from .allframe import allframe
 from .create_master import create_master
+from .psf_preview import psf_preview

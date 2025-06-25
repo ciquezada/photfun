@@ -2,11 +2,33 @@ from .phot_file import PhotFile
 import os
 import re
 import numpy as np
+import base64
+from io import BytesIO
+from PIL import Image
 
 
 class PhotPSF(PhotFile):
     def __init__(self, path, *args, **kwargs):
         super().__init__(path, *args, **kwargs)
+        self.preview_path = None
+
+    def preview_plot(self, indx):
+        # 1. Obtén la ruta
+        if not self.preview_path:
+            return None
+        png_path = self.preview_path[indx]
+
+
+        # 2. Abre la imagen
+        with Image.open(png_path) as img:
+            # 3. Guarda en buffer como PNG
+            buf = BytesIO()
+            img.save(buf, format='PNG')
+            buf.seek(0)
+
+        # 4. Codifica en Base64 y retorna
+        b64_str = base64.b64encode(buf.getvalue()).decode('ascii')
+        return b64_str
 
     def model(self, indx=0):
         """Carga la tabla correspondiente cada vez que se accede a `df`."""

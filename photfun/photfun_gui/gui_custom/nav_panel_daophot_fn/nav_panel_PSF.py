@@ -141,6 +141,11 @@ def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sidev
                                                                             pbar_params=pbar_params)
                 out_psf_obj.alias = f"{out_psf_obj.alias} (PSF map)"
                 out_table_obj.alias = f"{out_psf_obj.alias} (.nei map)"
+                with ui.Progress(min=0, max=1) as p:
+                    pbar = daophot_pbar(p, "PSF Preview")
+                    # Call the photfun client to generate PSF preview
+                    photfun_client.psf_preview(out_psf_obj.id, pbar=pbar)
+                ui.notification_show("PSF preview generated successfully.")
                 # Construir el diccionario de previews
                 with ui.Progress(min=0, max=1) as p3:
                     p3.set(message="Preparing previews")
@@ -151,9 +156,11 @@ def nav_panel_PSF_server(input, output, session, photfun_client, nav_table_sidev
                         key = ";".join(f"{k}={v:.2f}" for k, v in upd.items())
                         if "ERROR" in out_psf_obj.path[idx]:
                             continue
-                        img = out_psf_obj.model(idx)           # accede al array FITS
-                        gif_b64 = psf_preview(img, dpi=100)             # tu función de GIF→base64
-                        d[key] = gif_b64
+                        try:
+                            png_b64 = out_psf_obj.preview_plot(idx)           # accede al array FITS
+                            d[key] = png_b64
+                        except:
+                            continue
                 ui.notification_show(f"PSF map created\n -> [{out_psf_obj.id}] {out_psf_obj.alias}")
                 nav_table_sideview_update(fits=False)
                 update_select()

@@ -1,3 +1,4 @@
+from ...misc_tools import daophot_pbar
 import os
 from shiny import module, reactive, render, ui
 from faicons import icon_svg
@@ -124,52 +125,82 @@ def nav_panel_PSF_server(input, output, session, photfun_client,
         info_text = "\n".join([f"{key}: {value}" for key, value in info.items()])
         return info_text
 
-    # ** Preview de la PSF como GIF **
+    psf_preview_counter = reactive.Value(0)
     @render.ui
+    # UI function to plot PSF and profile or show a button to generate preview
     def plot_psf_and_profile():
-        psf_obj = selected_psf()
-        if not psf_obj or not psf_obj.path:
-            return ui.HTML("<em>No PSF loaded</em>")
-        idx_str = next(iter(input.select_psf_file()), None)
-        if idx_str is None or idx_str == "":
-            return ui.HTML("<em>Select a PSF file</em>")
-        idx = int(idx_str)
-        # psf_obj.model(idx) debe devolver la matriz de corrección
-        psf_data = psf_obj.model(idx)
-        # psf_preview devuelve un base64 GIF
-        img_b64 = psf_and_profile(psf_data, photfun_client.n_jobs)
-        return ui.img(src=f"data:image/gif;base64,{img_b64}", width="100%")
+        _ = psf_preview_counter()
 
-    # ** Preview de la PSF como GIF **
-    @render.ui
-    def plot_psf_preview():
         psf_obj = selected_psf()
         if not psf_obj or not psf_obj.path:
             return ui.HTML("<em>No PSF loaded</em>")
-        idx_str = next(iter(input.select_psf_file()), None)
-        if idx_str is None or idx_str == "":
-            return ui.HTML("<em>Select a PSF file</em>")
-        idx = int(idx_str)
-        # psf_obj.model(idx) debe devolver la matriz de corrección
-        psf_data = psf_obj.model(idx)
-        # psf_preview devuelve un base64 GIF
-        img_b64 = psf_preview(psf_data, photfun_client.n_jobs)
-        return ui.img(src=f"data:image/gif;base64,{img_b64}", width="100%")
 
-    # ------------------------------------
-    # ** Perfil radial de la PSF como GIF **
-    @render.ui
-    def plot_psf_profile():
-        psf_obj = selected_psf()
-        if not psf_obj or not psf_obj.path:
-            return ui.HTML("<em>No PSF loaded</em>")
         idx_str = next(iter(input.select_psf_file()), None)
         if idx_str is None or idx_str == "":
             return ui.HTML("<em>Select a PSF file</em>")
+
         idx = int(idx_str)
-        psf_data = psf_obj.model(idx)
-        # generate_psf_profile devuelve un base64 GIF
-        img_b64 = generate_psf_profile(psf_data, photfun_client.n_jobs)
-        return ui.img(src=f"data:image/gif;base64,{img_b64}", width="100%")
+        # preview_plot returns a base64-encoded gif or None
+        img_b64 = psf_obj.preview_plot(idx)
+
+        if img_b64:
+            # Display the preview image if available
+            return ui.img(src=f"data:image/png;base64,{img_b64}", width="100%")
+        else:
+            # Show button to generate PSF preview
+            return ui.div(
+                ui.HTML("<em>No PSF preview available</em>"),
+                ui.input_action_button("generate_psf_preview_btn", "Generate PSF Preview", class_="btn-primary")
+            )
+
+    # Effect to handle PSF preview generation
+    @reactive.Effect
+    @reactive.event(input.generate_psf_preview_btn)
+    def generate_psf_preview_action():
+        psf_obj = selected_psf()
+        if not psf_obj:
+            ui.notification_show("Error: No PSF selected.", type="warning")
+            return
+        try:
+            with ui.Progress(min=0, max=1) as p:
+                pbar = daophot_pbar(p, "PSF Preview")
+                # Call the photfun client to generate PSF preview
+                photfun_client.psf_preview(psf_obj.id, pbar=pbar)
+            ui.notification_show("PSF preview generated successfully.")
+            psf_preview_counter.set(psf_preview_counter() + 1)  # <- Forzar re-render
+        except Exception as e:
+            ui.notification_show(f"Error generating PSF preview: {e}", type="error")
+
+    # # ** Preview de la PSF como GIF **
+    # @render.ui
+    # def plot_psf_preview():
+    #     psf_obj = selected_psf()
+    #     if not psf_obj or not psf_obj.path:
+    #         return ui.HTML("<em>No PSF loaded</em>")
+    #     idx_str = next(iter(input.select_psf_file()), None)
+    #     if idx_str is None or idx_str == "":
+    #         return ui.HTML("<em>Select a PSF file</em>")
+    #     idx = int(idx_str)
+    #     # psf_obj.model(idx) debe devolver la matriz de corrección
+    #     psf_data = psf_obj.model(idx)
+    #     # psf_preview devuelve un base64 GIF
+    #     img_b64 = psf_preview(psf_data, photfun_client.n_jobs)
+    #     return ui.img(src=f"data:image/gif;base64,{img_b64}", width="100%")
+
+    # # ------------------------------------
+    # # ** Perfil radial de la PSF como GIF **
+    # @render.ui
+    # def plot_psf_profile():
+    #     psf_obj = selected_psf()
+    #     if not psf_obj or not psf_obj.path:
+    #         return ui.HTML("<em>No PSF loaded</em>")
+    #     idx_str = next(iter(input.select_psf_file()), None)
+    #     if idx_str is None or idx_str == "":
+    #         return ui.HTML("<em>Select a PSF file</em>")
+    #     idx = int(idx_str)
+    #     psf_data = psf_obj.model(idx)
+    #     # generate_psf_profile devuelve un base64 GIF
+    #     img_b64 = generate_psf_profile(psf_data, photfun_client.n_jobs)
+    #     return ui.img(src=f"data:image/gif;base64,{img_b64}", width="100%")
 
     return

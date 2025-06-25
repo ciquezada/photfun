@@ -38,7 +38,7 @@ def nav_panel_TABLE_ui():
 def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
                            nav_table_sideview_update, tables_df, input_tabs_main):
     event_load_local_table, input_load_local_table = input_local_file_server(
-        "load_local_table", [".csv", ".coo", ".als", ".ap", ".lst"]
+        "load_local_table", [".csv", ".coo", ".als", ".ap", ".lst", ".mch"]
     )
 
     @reactive.Effect
@@ -223,7 +223,7 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
         fig, ax = plt.subplots()
         ax.plot(no_sel.MAG, no_sel.chi, 'k+', alpha=0.4)
         ax.plot(sel.MAG, sel.chi, 'r+')
-        ax.set_xlim(11, 22); ax.set_ylim(0, 7)
+        ax.set_ylim(0, 7)#; ax.set_xlim(11, 22)
         ax.set_xlabel('MAG'); ax.set_ylabel('$\chi^2$')
         ax.grid()
         return fig
@@ -245,7 +245,8 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
         fig, ax = plt.subplots()
         ax.plot(no_sel.MAG, no_sel.sharpness, 'k+', alpha=0.4)
         ax.plot(sel.MAG, sel.sharpness, 'r+')
-        ax.set_xlim(11, 22); ax.set_ylim(-4, 4)
+        # ax.set_xlim(11, 22)
+        ax.set_ylim(-4, 4)
         ax.set_xlabel('MAG'); ax.set_ylabel('Sharp')
         ax.grid()
         return fig
@@ -267,7 +268,8 @@ def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
         fig, ax = plt.subplots()
         ax.plot(no_sel.MAG, no_sel.merr, 'k+', alpha=0.4)
         ax.plot(sel.MAG, sel.merr, 'r+')
-        ax.set_xlim(11, 22); ax.set_ylim(0, 0.5)
+        # ax.set_xlim(11, 22)
+        ax.set_ylim(0, 0.5)
         ax.set_xlabel('MAG'); ax.set_ylabel('$MAG_{err}$')
         ax.grid()
         return fig

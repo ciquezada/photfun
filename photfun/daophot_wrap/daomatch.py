@@ -24,7 +24,10 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
 
         
         in_master_name = os.path.basename(temp_master)
-        in_file_list = [os.path.basename(in_path) for in_path in temp_path_list]
+        in_file_list = []
+        for in_path in temp_path_list:
+            in_file_list.append(os.path.basename(in_path))
+            in_file_list.append("y")
         out_mch_filename = os.path.basename(temp_mch)
 
         if verbose:
@@ -32,10 +35,10 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
 
         check_file(temp_master, "master file input: ")
         overwrite = [""] if os.path.isfile(out_mch_filename) else []
-        cmd_list = ['daomatch << EOF >> daomatch.log', in_master_name, 
+        cmd_list = [f'timeout {int(timeout)}s daomatch << EOF >> daomatch.log', in_master_name, 
                         out_mch_filename, *overwrite,
-                        *in_file_list, '', 
-                        'EOF']
+                        *in_file_list, '', "$(kill -INT $$)",
+                        'EOF', 'exit']
         cmd = '\n'.join(cmd_list)
 
                
@@ -60,7 +63,7 @@ def daomatch(in_master_als, in_path_list, out_mch, verbose=True,
 
     finally:
         # Limpiar carpeta temporal
-        shutil.rmtree(temp_dir)
+        # shutil.rmtree(temp_dir)
         pass
 
     return final_out_mch
