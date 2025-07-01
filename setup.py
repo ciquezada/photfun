@@ -17,7 +17,7 @@ setup(
         "nest_asyncio==1.6.0",
         "numpy==2.2.5",
         "pandas==2.2.3",
-        "Pillow==11.2.1",
+        "Pillow==11.3",
         "scipy==1.15.2",
         "shiny==1.4.0",
         "tqdm==4.67.1",
