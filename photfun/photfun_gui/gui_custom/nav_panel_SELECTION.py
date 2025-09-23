@@ -143,7 +143,9 @@ def nav_panel_SELECTION_server(input, output, session, photfun_client, nav_table
 
                 img_data = preview_functions["Source preview"](row, fits_image)
                 adv_func = preview_functions[input.selected_function()]
-                img_data_adv = adv_func(row, fits_image, photfun_client.n_jobs) if adv_func else None # Genera la animación
+                img_data_adv = adv_func(row=row, fits_image=fits_image, 
+                                        njobs=photfun_client.n_jobs, 
+                                        size=photfun_client.daophot_opt['fi']*2) if adv_func else None # Genera la animación
 
                 # Obtener MAG si existe en la fila
                 mag_value = next((row[col] for col in row.index if 'mag' in col.lower()), None)

@@ -15,13 +15,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 
-def source_preview(row, fits_image, n_jobs=1):
+def source_preview(row, fits_image, n_jobs=1, size=20, *args, **kwargs):
     # Coordenadas de la posición (X, Y) de la fuente
     X_pos = float(row['X'])
     Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 20
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
@@ -60,13 +59,12 @@ def source_preview(row, fits_image, n_jobs=1):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def generate_prof(row, fits_image, n_jobs=1):
+def generate_prof(row, fits_image, n_jobs=1, size=30, *args, **kwargs):
     # Coordenadas de la posición (X, Y) de la fuente
     X_pos = float(row['X'])
     Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 30
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
@@ -100,8 +98,9 @@ def generate_prof(row, fits_image, n_jobs=1):
         # Alineación por máximo central
         N = len(line_values)
         center_mask = N // 2
-        start_mask = center_mask - 10
-        end_mask = start_mask + 20
+        center_mask_length = 30
+        start_mask = center_mask - center_mask_length
+        end_mask = start_mask + center_mask_length*2
         mask = line_values[start_mask:end_mask]
         max_mask = np.argmax(mask)
         indx_max = start_mask + max_mask
@@ -121,8 +120,11 @@ def generate_prof(row, fits_image, n_jobs=1):
     mean_profile = np.mean(all_profiles, axis=0)
     axs.plot(np.linspace(X_pos-size//2, X_pos+size//2, 100), mean_profile, color='red', lw=0.5, label='Promedio')
     y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
-    axs.set_ylim(y_min_plot, y_max_plot * 1.3)
+    axs.set_ylim(bottom=y_min_plot)
     axs.set_xlim(X_pos-size//2, X_pos+size//2)
+    xticks = axs.get_xticks()
+    xticks_int = [int(round(t)) for t in xticks if x_min <= t <= x_max]
+    axs.set_xticks(xticks_int)
     plt.tight_layout()
 
     # Generar GIF
@@ -137,13 +139,12 @@ def generate_prof(row, fits_image, n_jobs=1):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def generate_prof_fast(row, fits_image, n_jobs=1):
+def generate_prof_fast(row, fits_image, n_jobs=1, size=30, *args, **kwargs):
     # Coordenadas de la posición (X, Y) de la fuente
     X_pos = float(row['X'])
     Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 30
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
@@ -177,8 +178,9 @@ def generate_prof_fast(row, fits_image, n_jobs=1):
         # Alineación por máximo central
         N = len(line_values)
         center_mask = N // 2
-        start_mask = center_mask - 10
-        end_mask = start_mask + 20
+        center_mask_length = 30
+        start_mask = center_mask - center_mask_length
+        end_mask = start_mask + center_mask_length*2
         mask = line_values[start_mask:end_mask]
         max_mask = np.argmax(mask)
         indx_max = start_mask + max_mask
@@ -192,14 +194,17 @@ def generate_prof_fast(row, fits_image, n_jobs=1):
     # Configurar figura y graficar resultados
     fig, axs = plt.subplots(1, 1, figsize=(2, 2), dpi=200)
     for line_values in all_profiles:
-        axs.plot(line_values, color='gray', alpha=0.7, lw=0.5)
+        axs.plot(np.linspace(X_pos-size//2, X_pos+size//2, 100), line_values, color='gray', alpha=0.7, lw=0.5)
     
     # Calcular perfil promedio
     mean_profile = np.mean(all_profiles, axis=0)
-    axs.plot(mean_profile, color='red', lw=0.5, label='Promedio')
+    axs.plot(np.linspace(X_pos-size//2, X_pos+size//2, 100), mean_profile, color='red', lw=0.5, label='Promedio')
     y_min_plot, y_max_plot = np.nanpercentile(mean_profile, [0, 95])
-    axs.set_ylim(y_min_plot, y_max_plot * 1.3)
-    axs.set_xlim(0, 100)
+    axs.set_ylim(bottom=y_min_plot)
+    axs.set_xlim(X_pos-size//2, X_pos+size//2)
+    xticks = axs.get_xticks()
+    xticks_int = [int(round(t)) for t in xticks if x_min <= t <= x_max]
+    axs.set_xticks(xticks_int)
     plt.tight_layout()
 
     # Generar GIF
@@ -214,13 +219,12 @@ def generate_prof_fast(row, fits_image, n_jobs=1):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def generate_prof_animation(row, fits_image, n_jobs=1):
+def generate_prof_animation(row, fits_image, n_jobs=1, size=20, *args, **kwargs):
     # Coordenadas de la posición (X, Y) de la fuente
     X_pos = float(row['X'])
     Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 20
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
@@ -296,13 +300,12 @@ def generate_prof_animation(row, fits_image, n_jobs=1):
         
         # plt.close(fig)
 
-def generate_rotation_animation(row, fits_image, n_jobs=1):
+def generate_rotation_animation(row, fits_image, n_jobs=1, size=20, *args, **kwargs):
     # Coordenadas de la posición (X, Y) de la fuente
     X_pos = float(row['X'])
     Y_pos = float(row['Y'])
 
     # Tamaño del recorte (cuadrado de 20x20 píxeles alrededor de la fuente)
-    size = 20
     x_min = max(X_pos - size // 2, 0)
     x_max = min(X_pos + size // 2, fits_image.data.shape[1])
     y_min = max(Y_pos - size // 2, 0)
@@ -364,7 +367,7 @@ def generate_rotation_animation(row, fits_image, n_jobs=1):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def psf_preview(image_data, n_jobs=1, dpi=200):
+def psf_preview(image_data, n_jobs=1, dpi=200, *args, **kwargs):
     radius = ((image_data.shape[0] - 1) / 2 - 1) / 2
 
     # Extraer el recorte de la imagen FITS
@@ -402,7 +405,7 @@ def psf_preview(image_data, n_jobs=1, dpi=200):
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
 
-def generate_psf_profile(image_data, n_jobs=1):
+def generate_psf_profile(image_data, n_jobs=1, *args, **kwargs):
     size = image_data.shape[0]
     radius = ((size - 1) / 2 - 1) / 2
 
@@ -482,7 +485,7 @@ def generate_psf_profile(image_data, n_jobs=1):
 
     return base64.b64encode(gif_buffer.getvalue()).decode()
 
-def psf_and_profile(image_data, n_jobs=1):
+def psf_and_profile(image_data, n_jobs=1, *args, **kwargs):
     size = image_data.shape[0]
     radius = ((size - 1) / 2 - 1) / 2
 
@@ -581,7 +584,7 @@ def psf_and_profile(image_data, n_jobs=1):
 
     return base64.b64encode(png_buffer.getvalue()).decode()
 
-def render_allstar_plots(df, fits_hdu=None, dpi=100):
+def render_allstar_plots(df, fits_hdu=None, dpi=100, *args, **kwargs):
     """
     Dado un DataFrame con columnas MAG, merr, chi, sharpness y una imagen FITS,
     devuelve un PNG (en base64) con una grilla 2x2:

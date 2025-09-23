@@ -6,8 +6,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='photfun',
-    version='0.1.14',
+    version='0.1.15',
     packages=find_packages(),
+        include_package_data=True,  # importante
+    package_data={
+        "photfun.daophot_wrap": ["tools/fake.fits",
+                                "tools/fake.lst"],  # los .fits
+    },
     install_requires=[
         "astropy==7.0.1",
         "faicons==0.2.2",
