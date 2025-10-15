@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='photfun',
-    version='0.1.15',
+    version='0.1.16',
     packages=find_packages(),
         include_package_data=True,  # importante
     package_data={
