@@ -28,7 +28,7 @@ class PhotTable(PhotFile):
             return self._load_coord(indx)
         elif self.file_type == ".ap":
             return self._load_ap(indx)
-        elif self.file_type == ".als":
+        elif self.file_type in [".als", ".alf"]:
             return self._load_als(indx)
         elif self.file_type == ".mag":
             return self._load_mag(indx)

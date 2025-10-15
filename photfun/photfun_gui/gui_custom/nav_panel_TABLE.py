@@ -38,7 +38,7 @@ def nav_panel_TABLE_ui():
 def nav_panel_TABLE_server(input, output, session, photfun_client, samp_client,
                            nav_table_sideview_update, tables_df, input_tabs_main):
     event_load_local_table, input_load_local_table = input_local_file_server(
-        "load_local_table", [".csv", ".coo", ".als", ".ap", ".lst", ".mch"]
+        "load_local_table", [".csv", ".coo", ".als", ".ap", ".lst", ".mch", ".alf"]
     )
 
     @reactive.Effect
