@@ -67,6 +67,12 @@ sudo groupadd docker   # (if group doesn't exist)
 sudo usermod -aG docker $USER
 ```
 
+6. Make sure your user `docker` group is working to avoid using `sudo`:
+
+```bash
+docker ps
+```
+
 Log out and back in (or reboot) for group changes to take effect.
 
 #### macOS
